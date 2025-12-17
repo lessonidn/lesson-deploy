@@ -1,8 +1,9 @@
+@import './styles/fonts.module.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import './styles/fonts.module.css';
 
 /* ===============================
    CSS VARIABLES (LIGHT MODE)
