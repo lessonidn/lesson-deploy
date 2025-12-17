@@ -20,9 +20,9 @@ export type QuizContextTypes = {
   quizTopic: string
   selectQuizTopic: (type: string) => void
   questions: Question[]
-  setQuestions: Dispatch<SetStateAction<any[]>>
+  setQuestions: Dispatch<SetStateAction<Question[]>>   // ✅ bukan any[]
   result: Result[]
-  setResult: Dispatch<SetStateAction<any[]>>
+  setResult: Dispatch<SetStateAction<Result[]>>        // ✅ bukan any[]
   timer: number
   setTimer: Dispatch<SetStateAction<number>>
   endTime: number

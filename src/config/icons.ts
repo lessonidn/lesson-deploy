@@ -8,3 +8,4 @@ import Sun from '../assets/icons/sun.svg?react'
 import Moon from '../assets/icons/moon.svg?react'
 
 export { AppLogo, CheckIcon, Next, Refresh, TimerIcon, StartIcon, Sun, Moon }
+

@@ -28,7 +28,7 @@ const useTimer = (
       }, 1000)
       return () => clearTimeout(countTimer)
     }
-  }, [timer, setTimer])
+  }, [timer, setTimer, showResultModal])
 }
 
 export default useTimer
