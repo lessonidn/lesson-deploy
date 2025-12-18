@@ -133,8 +133,8 @@ export async function softDeleteExamSet(id: string) {
    ========================= */
 export async function getQuestions(examSetId?: string) {
   let query = supabase
-    .from('questions')
-    .select('id, text, exam_set_id, exam_sets ( id, title )')
+    .from('questions_with_exam')
+    .select('id, text, exam_set_id, exam_title')
     .order('id')
 
   if (examSetId) query = query.eq('exam_set_id', examSetId)

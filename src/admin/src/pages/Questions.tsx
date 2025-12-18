@@ -16,7 +16,7 @@ type Question = {
   id: string
   text: string
   exam_set_id: string
-  exam_sets?: { id: string; title: string }[]
+  exam_title: string
 }
 
 export default function Questions() {
@@ -41,7 +41,7 @@ export default function Questions() {
         exam_set_id: q.exam_set_id,
         exam_title: q.exam_sets && q.exam_sets.length > 0 ? q.exam_sets[0].title : ''
       }))
-      setItems(normalized)
+      setItems(questionsData || [])
     }
   }
 
@@ -136,7 +136,7 @@ export default function Questions() {
             <tr key={q.id}>
               <td className="p-2 border">{q.text}</td>
               <td className="p-2 border text-sm text-gray-600">
-                {q.exam_sets && q.exam_sets.length > 0 ? q.exam_sets[0].title : '-'}
+                {q.exam_title || '-'}
               </td>
               <td className="p-2 border">
                 <div className="flex gap-2">
