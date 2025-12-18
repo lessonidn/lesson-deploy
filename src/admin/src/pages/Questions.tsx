@@ -35,13 +35,7 @@ export default function Questions() {
       setError(setsError?.message || questionsError?.message || 'Gagal memuat data')
     } else {
       setSets(setsData || [])
-      const normalized = (questionsData || []).map(q => ({
-        id: q.id,
-        text: q.text,
-        exam_set_id: q.exam_set_id,
-        exam_title: q.exam_sets && q.exam_sets.length > 0 ? q.exam_sets[0].title : ''
-      }))
-      setItems(questionsData || [])
+      setItems(questionsData || [])   // langsung set tanpa normalized
     }
   }
 
