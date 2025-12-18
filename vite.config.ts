@@ -3,11 +3,16 @@ import react from '@vitejs/plugin-react'
 import svgr from 'vite-plugin-svgr'
 
 export default defineConfig({
-  plugins: [
-    react(),
-    svgr(), // aktifkan agar bisa import SVG sebagai React component
-  ],
+  plugins: [react(), svgr()],
+  build: {
+    rollupOptions: {
+      input: {
+        main: 'index.html',
+        admin: 'admin.html',
+      },
+    },
+  },
   server: {
-    port: 5173, // default port untuk user app
+    port: 5173,
   },
 })
