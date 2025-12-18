@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
+import logo from '../../public/leaf.png'
 
 type Category = {
   id: string
@@ -43,7 +44,7 @@ export default function Home() {
         .from('exam_sets')
         .select('id, title, sub_category_id')
         .eq('is_published', true)
-        .eq('is_deleted', false)  // exclude yang sudah soft delete
+        .eq('is_deleted', false)
         .order('created_at')
     ])
 
@@ -59,7 +60,7 @@ export default function Home() {
   }
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading…</div>
+    return <div className="min-h-screen flex items-center justify-center text-blue-500 font-medium">Loading…</div>
   }
 
   if (error) {
@@ -67,22 +68,34 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-pink-50">
-      <header className="bg-white border-b shadow-sm">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100">
+      <header className="bg-blue-600 text-white shadow">
         <div className="max-w-6xl mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold text-indigo-600">Lesson.Idn</h1>
-          <p className="text-gray-600">Selamat datang di bimbel online</p>
+          <div className="relative inline-block">
+            {/* Logo di atas huruf N */}
+            <img
+              src={logo}
+              alt="Logo"
+              className="absolute -top-6 left-[7rem] h-7 w-auto" // sesuaikan posisi dan ukuran
+            />
+
+            <h1 className="text-4xl font-bold text-gray-400 tracking-tight">
+              LES<span className="text-sky-200">SON</span>
+            </h1>
+          </div>
+
+          <p className="text-sm text-gray-100 mt-2">The Best Choice Of Tutoring</p>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-8 space-y-10">
+      <main className="max-w-6xl mx-auto px-4 py-10 space-y-10">
         {categories.map((cat) => {
           const catSubs = subCategories.filter(s => s.category_id === cat.id)
           if (catSubs.length === 0) return null
 
           return (
             <section key={cat.id}>
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4 border-l-4 border-blue-500 pl-3">
                 {cat.name}
               </h2>
 
@@ -93,19 +106,19 @@ export default function Home() {
 
                   return (
                     <div key={sub.id}>
-                      <h3 className="font-medium text-indigo-600 mb-2">
+                      <h3 className="font-semibold text-blue-600 mb-2 text-lg">
                         {sub.name}
                       </h3>
 
-                      <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
+                      <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
                         {exams.map(exam => (
                           <Link
                             key={exam.id}
                             to={`/exam/${exam.id}`}
-                            className="p-4 rounded-lg bg-white border hover:shadow-md hover:border-indigo-400 transition"
+                            className="p-4 rounded-xl bg-white border border-blue-100 hover:border-sky-400 hover:shadow transition"
                           >
-                            <div className="font-semibold">{exam.title}</div>
-                            <div className="text-sm text-gray-500 mt-1">
+                            <div className="font-semibold text-gray-800">{exam.title}</div>
+                            <div className="text-sm text-sky-700 mt-1 font-medium">
                               Mulai latihan →
                             </div>
                           </Link>
