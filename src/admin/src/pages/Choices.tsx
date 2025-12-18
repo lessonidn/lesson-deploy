@@ -76,16 +76,17 @@ export default function Choices() {
     <div className="space-y-4">
       <h2 className="text-xl font-bold mb-4">Choices</h2>
 
-      <div className="flex gap-2 items-center">
+      {/* Form input dibagi jadi beberapa baris agar tidak overlap */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
         <select
-          className="border px-3 py-2 rounded"
+          className="border px-3 py-2 rounded w-full"
           value={questionId}
           onChange={e => {
             setQuestionId(e.target.value)
             if (e.target.value) loadChoices(e.target.value)
           }}
         >
-          <option value="">Select Question</option>
+          <option value="">Pilih Soal</option>
           {questions.map(q => (
             <option key={q.id} value={q.id}>
               {q.text}
@@ -94,26 +95,28 @@ export default function Choices() {
         </select>
 
         <input
-          className="border px-3 py-2 rounded flex-1"
-          placeholder="Choice text"
+          className="border px-3 py-2 rounded w-full md:col-span-2"
+          placeholder="Jawaban"
           value={text}
           onChange={e => setText(e.target.value)}
         />
 
-        <label className="flex items-center gap-1">
+        <label className="flex items-center gap-1 w-full">
           <input
             type="checkbox"
             checked={correct}
             onChange={e => setCorrect(e.target.checked)}
           />
-          Correct
+          Kunci Jawaban
         </label>
+      </div>
 
+      <div className="flex flex-wrap gap-2">
         <button
           onClick={save}
           className="bg-indigo-600 text-white px-4 py-2 rounded"
         >
-          {editId ? 'Update' : 'Add'}
+          {editId ? 'Update' : 'Tambah'}
         </button>
 
         {editId && (
@@ -131,7 +134,7 @@ export default function Choices() {
       {questionId && (
         <ul className="bg-white border rounded divide-y">
           {choices.map(c => (
-            <li key={c.id} className="p-3 flex justify-between">
+            <li key={c.id} className="p-3 flex justify-between items-center">
               <span>
                 {c.text}{' '}
                 {c.is_correct && (

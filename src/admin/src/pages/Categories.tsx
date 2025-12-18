@@ -71,7 +71,7 @@ export default function Categories() {
       <div className="flex gap-2">
         <input
           className="border px-3 py-2 rounded w-64"
-          placeholder="Category name"
+          placeholder="Mata Pelajaran"
           value={name}
           onChange={e => setName(e.target.value)}
         />
@@ -79,7 +79,7 @@ export default function Categories() {
           onClick={save}
           className="px-4 py-2 bg-indigo-600 text-white rounded"
         >
-          {editId ? 'Update' : 'Add'}
+          {editId ? 'Update' : 'Tambah'}
         </button>
         {editId && (
           <button

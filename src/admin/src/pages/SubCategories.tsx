@@ -86,7 +86,7 @@ export default function SubCategories() {
           value={catId}
           onChange={e => setCatId(e.target.value)}
         >
-          <option value="">Select Category</option>
+          <option value="">Pilih MAPEL</option>
           {cats.map(c => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -96,7 +96,7 @@ export default function SubCategories() {
 
         <input
           className="border px-3 py-2 rounded"
-          placeholder="Sub category name"
+          placeholder="Nama Judul"
           value={name}
           onChange={e => setName(e.target.value)}
         />
@@ -105,7 +105,7 @@ export default function SubCategories() {
           onClick={save}
           className="bg-indigo-600 text-white px-4 rounded"
         >
-          {editId ? 'Update' : 'Add'}
+          {editId ? 'Update' : 'Tambah'}
         </button>
 
         {editId && (
@@ -141,7 +141,7 @@ export default function SubCategories() {
                 onClick={() => remove(i.id)}
                 className="px-2 py-1 bg-red-600 text-white rounded"
               >
-                Soft Delete
+                Delete
               </button>
             </span>
           </li>

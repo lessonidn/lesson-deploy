@@ -82,7 +82,7 @@ export default function Questions() {
           value={setId}
           onChange={e => setSetId(e.target.value)}
         >
-          <option value="">Select Exam</option>
+          <option value="">Pilih Lembar Soal</option>
           {sets.map(s => (
             <option key={s.id} value={s.id}>
               {s.title}
@@ -92,7 +92,7 @@ export default function Questions() {
 
         <input
           className="border px-3 py-2 rounded flex-1"
-          placeholder="Question text"
+          placeholder="Soal - Soal"
           value={text}
           onChange={e => setText(e.target.value)}
         />
@@ -101,7 +101,7 @@ export default function Questions() {
           onClick={save}
           className="bg-indigo-600 text-white px-4 rounded"
         >
-          {editId ? 'Update' : 'Add'}
+          {editId ? 'Update' : 'Tambah'}
         </button>
 
         {editId && (
@@ -119,17 +119,17 @@ export default function Questions() {
       {/* ubah jadi tabel agar ada kolom exam */}
       <table className="w-full border-collapse bg-white border rounded">
         <thead>
-          <tr className="bg-gray-100 text-left">
-            <th className="p-2 border">Question</th>
-            <th className="p-2 border">Exam</th>
-            <th className="p-2 border">Actions</th>
+          <tr className="bg-gray-100 text-center">
+            <th className="p-2 border">Soal - Soal</th>
+            <th className="p-2 border">Lembar Soal</th>
+            <th className="p-2 border">Aksi</th>
           </tr>
         </thead>
         <tbody>
           {items.map(q => (
             <tr key={q.id}>
               <td className="p-2 border">{q.text}</td>
-              <td className="p-2 border text-sm text-gray-600">
+              <td className="p-2 border text-sm text-gray-600 text-center">
                 {q.exam_title || '-'}
               </td>
               <td className="p-2 border">

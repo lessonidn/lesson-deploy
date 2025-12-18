@@ -86,7 +86,7 @@ export default function ExamSets() {
           value={subId}
           onChange={e => setSubId(e.target.value)}
         >
-          <option value="">Select Sub Category</option>
+          <option value="">Pilih Judul</option>
           {subs.map(s => (
             <option key={s.id} value={s.id}>
               {s.name}
@@ -96,7 +96,7 @@ export default function ExamSets() {
 
         <input
           className="border px-3 py-2 rounded flex-1"
-          placeholder="Exam title"
+          placeholder="Nama Lembar Soal"
           value={title}
           onChange={e => setTitle(e.target.value)}
         />
@@ -105,7 +105,7 @@ export default function ExamSets() {
           onClick={save}
           className="bg-indigo-600 text-white px-4 rounded"
         >
-          {editId ? 'Update' : 'Add'}
+          {editId ? 'Update' : 'Tambah'}
         </button>
 
         {editId && (
@@ -141,7 +141,7 @@ export default function ExamSets() {
                 onClick={() => remove(i.id)}
                 className="px-2 py-1 bg-red-600 text-white rounded"
               >
-                Soft Delete
+                Delete
               </button>
             </span>
           </li>
