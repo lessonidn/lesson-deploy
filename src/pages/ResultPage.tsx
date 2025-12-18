@@ -120,7 +120,7 @@ export default function ResultPage() {
       <div className="bg-white border-b shadow-sm">
         <div className="mx-auto max-w-4xl px-4 py-6">
           <h1 className="text-2xl font-bold text-indigo-600">
-            Hasil Quiz
+            Hasil Tes
           </h1>
           <p className="text-gray-600 mt-1">
             Skor kamu: <b>{attempt.score}</b> | Benar{' '}

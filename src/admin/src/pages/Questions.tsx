@@ -7,7 +7,6 @@ import {
   deleteQuestion,
 } from '../lib/quizApi'
 
-// Definisikan tipe data
 type ExamSet = {
   id: string
   title: string
@@ -17,17 +16,14 @@ type Question = {
   id: string
   text: string
   exam_set_id: string
-  exam_sets?: {
-    id: string
-    title: string
-  }[]   // ✅ array
+  exam_sets?: { id: string; title: string }[]
 }
 
 export default function Questions() {
-  const [sets, setSets] = useState<ExamSet[]>([])      // ✅ bukan any[]
-  const [items, setItems] = useState<Question[]>([])   // ✅ bukan any[]
+  const [sets, setSets] = useState<ExamSet[]>([])
+  const [items, setItems] = useState<Question[]>([])
   const [text, setText] = useState('')
-  const [setId, setSetId] = useState('')
+  const [setId, setSetId] = useState('')   // exam yang dipilih
   const [editId, setEditId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -39,7 +35,13 @@ export default function Questions() {
       setError(setsError?.message || questionsError?.message || 'Gagal memuat data')
     } else {
       setSets(setsData || [])
-      setItems(questionsData || [])
+      const normalized = (questionsData || []).map(q => ({
+        id: q.id,
+        text: q.text,
+        exam_set_id: q.exam_set_id,
+        exam_title: q.exam_sets && q.exam_sets.length > 0 ? q.exam_sets[0].title : ''
+      }))
+      setItems(normalized)
     }
   }
 
@@ -55,8 +57,8 @@ export default function Questions() {
       if (error) setError(error.message)
     }
 
+    // reset hanya text, exam tetap dipilih
     setText('')
-    setSetId('')
     load()
   }
 
@@ -69,7 +71,7 @@ export default function Questions() {
   function cancelEdit() {
     setEditId(null)
     setText('')
-    setSetId('')
+    // exam tetap dipilih agar tidak repot pilih lagi
   }
 
   useEffect(() => {
@@ -120,31 +122,46 @@ export default function Questions() {
 
       {error && <p className="text-red-500">{error}</p>}
 
-      <ul className="bg-white border rounded divide-y">
-        {items.map(q => (
-          <li key={q.id} className="p-3 flex justify-between">
-            {q.text} — <span className="text-sm text-gray-500">{q.exam_sets?.[0]?.title}</span>
-            <span className="flex gap-2">
-              <button
-                onClick={() => {
-                  setEditId(q.id)
-                  setText(q.text)
-                  setSetId(q.exam_set_id)
-                }}
-                className="px-2 py-1 bg-yellow-500 text-white rounded"
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => remove(q.id)}
-                className="px-2 py-1 bg-red-600 text-white rounded"
-              >
-                Delete
-              </button>
-            </span>
-          </li>
-        ))}
-      </ul>
+      {/* ubah jadi tabel agar ada kolom exam */}
+      <table className="w-full border-collapse bg-white border rounded">
+        <thead>
+          <tr className="bg-gray-100 text-left">
+            <th className="p-2 border">Question</th>
+            <th className="p-2 border">Exam</th>
+            <th className="p-2 border">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map(q => (
+            <tr key={q.id}>
+              <td className="p-2 border">{q.text}</td>
+              <td className="p-2 border text-sm text-gray-600">
+                {q.exam_sets && q.exam_sets.length > 0 ? q.exam_sets[0].title : '-'}
+              </td>
+              <td className="p-2 border">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setEditId(q.id)
+                      setText(q.text)
+                      setSetId(q.exam_set_id)
+                    }}
+                    className="px-2 py-1 bg-yellow-500 text-white rounded"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => remove(q.id)}
+                    className="px-2 py-1 bg-red-600 text-white rounded"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 }

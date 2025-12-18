@@ -43,7 +43,8 @@ export default function Home() {
         .from('exam_sets')
         .select('id, title, sub_category_id')
         .eq('is_published', true)
-        .order('created_at'),
+        .eq('is_deleted', false)  // exclude yang sudah soft delete
+        .order('created_at')
     ])
 
     if (catErr || subErr || examErr) {
@@ -69,8 +70,8 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-pink-50">
       <header className="bg-white border-b shadow-sm">
         <div className="max-w-6xl mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold text-indigo-600">Lesson Quiz</h1>
-          <p className="text-gray-600">Pilih kategori → sub kategori → exam</p>
+          <h1 className="text-3xl font-bold text-indigo-600">Lesson.Idn</h1>
+          <p className="text-gray-600">Selamat datang di bimbel online</p>
         </div>
       </header>
 

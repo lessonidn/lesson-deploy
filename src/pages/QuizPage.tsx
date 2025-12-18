@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
+import { shuffle } from '../lib/shuffle'
 
 type Choice = {
   id: string
@@ -29,6 +30,34 @@ export default function QuizPage() {
   // ⏱ TIMER
   const [timeLeft, setTimeLeft] = useState<number>(0)
   const [isTimeUp, setIsTimeUp] = useState(false)
+
+  // --- Fungsi Skip---
+  function getUnansweredIndexes() {
+    return questions
+      .map((q, index) => (answers[q.id] ? null : index))
+      .filter((v): v is number => v !== null)
+  }
+
+  function goNext() {
+    // kalau masih ada soal berikutnya → lanjut normal
+    if (currentIndex < questions.length - 1) {
+      setCurrentIndex(i => i + 1)
+      return
+    }
+
+    // sudah di soal terakhir
+    const unanswered = getUnansweredIndexes()
+
+    // kalau masih ada yang belum dijawab → lompat ke soal pertama yg kosong
+    if (unanswered.length > 0) {
+      setCurrentIndex(unanswered[0])
+      return
+    }
+
+    // kalau semua sudah dijawab → submit
+    submitQuiz()
+  }
+
 
   // --- Fungsi submit ---
   const submitQuiz = useCallback(async () => {
@@ -128,43 +157,50 @@ export default function QuizPage() {
     setError(null)
 
     // 1️⃣ ambil exam (durasi)
-    const { data: exam, error: examError } = await supabase
-      .from('exam_sets')
-      .select('duration_minutes')
-      .eq('id', examSetId)
-      .single()
+const { data: exam, error: examError } = await supabase
+  .from('exam_sets')
+  .select('duration_minutes')
+  .eq('id', examSetId)
+  .single()
 
-    if (examError || !exam) {
-      setError('Gagal memuat exam')
-      setLoading(false)
-      return
-    }
+if (examError || !exam) {
+  setError('Gagal memuat exam')
+  setLoading(false)
+  return
+}
 
-    setTimeLeft(exam.duration_minutes * 60)
+setTimeLeft(exam.duration_minutes * 60)
 
-    // 2️⃣ ambil soal
-    const { data: qs, error: qError } = await supabase
-      .from('questions')
-      .select(`
+  // 2️⃣ ambil soal
+  const { data: qs, error: qError } = await supabase
+    .from('questions')
+    .select(`
+      id,
+      text,
+      points,
+      choices (
         id,
         text,
-        points,
-        choices (
-          id,
-          text,
-          is_correct
-        )
-      `)
-      .eq('exam_set_id', examSetId)
-      .order('created_at')
+        is_correct
+      )
+    `)
+    .eq('exam_set_id', examSetId)
+    .order('created_at')
 
-    if (qError) {
-      setError(qError.message)
-    } else {
-      setQuestions(qs as Question[])
-    }
-
+  if (qError) {
+    setError(qError.message)
     setLoading(false)
+    return
+  }
+
+  // 🔀 shuffle soal + pilihan jawaban
+  const shuffledQuestions = shuffle(qs || []).map(q => ({
+    ...q,
+    choices: shuffle(q.choices || []),
+  }))
+
+  setQuestions(shuffledQuestions)
+  setLoading(false)
   }
 
   function selectAnswer(questionId: string, choiceId: string) {
@@ -192,6 +228,7 @@ export default function QuizPage() {
       </div>
     )
   }
+
 
   const question = questions[currentIndex]
   const selected = answers[question.id]
@@ -268,23 +305,22 @@ export default function QuizPage() {
               ← Sebelumnya
             </button>
 
-            {currentIndex < questions.length - 1 ? (
-              <button
-                disabled={isTimeUp}
-                onClick={() => setCurrentIndex(i => i + 1)}
-                className="px-6 py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 disabled:opacity-40"
-              >
-                Selanjutnya →
-              </button>
-            ) : (
-              <button
-                onClick={submitQuiz}
-                disabled={submitting}
-                className="px-6 py-2 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 disabled:opacity-50"
-              >
-                {submitting ? 'Menyimpan…' : 'Selesai & Lihat Hasil'}
-              </button>
-            )}
+            <button
+              disabled={isTimeUp || submitting}
+              onClick={goNext}
+              className={`px-6 py-2 rounded-lg font-semibold text-white
+                ${
+                  currentIndex === questions.length - 1
+                    ? 'bg-green-600 hover:bg-green-700'
+                    : 'bg-indigo-600 hover:bg-indigo-700'
+                }
+                disabled:opacity-50
+              `}
+            >
+              {currentIndex === questions.length - 1
+                ? 'Selesai / Cek Soal Kosong'
+                : 'Selanjutnya →'}
+            </button>
           </div>
         </div>
       </div>

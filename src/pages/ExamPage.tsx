@@ -94,7 +94,7 @@ export default function ExamPage() {
               to={`/quiz/${exam.id}`}
               className="px-6 py-3 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition"
             >
-              Mulai Quiz
+              Mulai Tes
             </Link>
           </div>
         </div>
