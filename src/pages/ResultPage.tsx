@@ -24,7 +24,6 @@ type Question = {
   userChoiceId: string | null
 }
 
-
 export default function ResultPage() {
   const { attemptId } = useParams()
   const [attempt, setAttempt] = useState<Attempt | null>(null)
@@ -32,7 +31,7 @@ export default function ResultPage() {
   const [loading, setLoading] = useState(true)
 
   const loadResult = useCallback(async () => {
-    // 1️⃣ ambil attempt
+    // 1️⃣ ambil attempt dasar
     const { data: attemptData } = await supabase
       .from('quiz_attempts')
       .select('*')
@@ -40,48 +39,68 @@ export default function ResultPage() {
       .single()
 
     if (!attemptData) return
-    setAttempt(attemptData)
 
     // 2️⃣ ambil jawaban + soal + pilihan
     const { data: answers } = await supabase
-    .from('quiz_answers')
-    .select(`
+      .from('quiz_answers')
+      .select(`
         choice_id,
         questions!inner (
-        id,
-        text,
-        points,
-        choices (
+          id,
+          text,
+          points,
+          choices (
             id,
             text,
             is_correct
+          )
         )
-        )
-    `)
-    .eq('quiz_attempt_id', attemptId)
+      `)
+      .eq('quiz_attempt_id', attemptId)
 
-    // 3️⃣ normalisasi data agar mudah dirender
+    // 3️⃣ normalisasi data
     const mapped =
-        (answers?.map(a => {
-            const q = a.questions?.[0]
-            if (!q) return null
-            return {
-            id: q.id,
-            text: q.text,
-            points: q.points,
-            choices: q.choices,
-            userChoiceId: a.choice_id,
-            } as Question
-        }).filter((q): q is Question => q !== null)) || []
+      (answers?.map(a => {
+        // pastikan questions bisa array atau object
+        const q = Array.isArray(a.questions) ? a.questions[0] : a.questions
+        if (!q) return null
+        return {
+          id: q.id,
+          text: q.text,
+          points: q.points,
+          choices: q.choices,
+          userChoiceId: String(a.choice_id), // pastikan string
+        } as Question
+      }).filter((q): q is Question => q !== null)) || []
 
     setQuestions(mapped)
+
+    // 4️⃣ hitung skor, benar, total
+    const correctCount = mapped.filter(q => {
+      const choice = q.choices.find(c => String(c.id) === q.userChoiceId)
+      return choice?.is_correct
+    }).length
+
+    const totalQuestions = mapped.length
+
+    const score = mapped.reduce((acc, q) => {
+      const choice = q.choices.find(c => String(c.id) === q.userChoiceId)
+      return acc + (choice?.is_correct ? q.points : 0)
+    }, 0)
+
+    setAttempt({
+      ...attemptData,
+      correct_answers: correctCount,
+      total_questions: totalQuestions,
+      score,
+    })
+
     setLoading(false)
   }, [attemptId])
 
   useEffect(() => {
     loadResult()
   }, [loadResult])
-
 
   if (loading) {
     return <div className="p-10 text-center">Loading hasil...</div>
