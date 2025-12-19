@@ -55,41 +55,60 @@ export async function softDeleteCategory(id: string) {
 /* =========================
    2. Sub Categories
    ========================= */
+// Ambil sub kategori, bisa difilter berdasarkan categoryId (MAPEL)
 export async function getSubCategories(categoryId?: string) {
   let query = supabase
     .from('sub_categories')
-    .select('id, name, slug, category_id, categories ( id, name )')
+    .select(`
+      id,
+      name,
+      slug,
+      category_id,
+      categories:categories!sub_categories_category_id_fkey ( id, name )
+    `)
     .eq('is_deleted', false)
     .order('name')
 
-  if (categoryId) query = query.eq('category_id', categoryId)
+  if (categoryId) {
+    query = query.eq('category_id', categoryId)
+  }
   return query
 }
 
-export async function createSubCategory(name: string, categoryId: string) {
+export async function createSubCategory(payload: { name: string; category_id: string }) {
   return supabase.from('sub_categories').insert([
     {
-      name,
-      slug: name.toLowerCase().replace(/\s+/g, '-'),
-      category_id: categoryId,
+      name: payload.name,
+      slug: payload.name.toLowerCase().replace(/\s+/g, '-'),
+      category_id: payload.category_id,
       is_deleted: false,
     },
   ])
 }
 
-export async function updateSubCategory(id: string, name: string) {
-  return supabase.from('sub_categories')
-    .update({
-      name,
-      slug: name.toLowerCase().replace(/\s+/g, '-'),
-    })
-    .eq('id', id)
+export async function updateSubCategory(
+  id: string,
+  payload: { name?: string; category_id?: string }
+) {
+  const updateData: Record<string, any> = {}
+
+  if (payload.name && payload.name.trim().length > 0) {
+    updateData.name = payload.name
+    updateData.slug = payload.name.toLowerCase().replace(/\s+/g, '-')
+  }
+  if (payload.category_id) {
+    updateData.category_id = payload.category_id
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    return { data: null, error: null }
+  }
+
+  return supabase.from('sub_categories').update(updateData).eq('id', id)
 }
 
 export async function softDeleteSubCategory(id: string) {
-  return supabase.from('sub_categories')
-    .update({ is_deleted: true })
-    .eq('id', id)
+  return supabase.from('sub_categories').update({ is_deleted: true }).eq('id', id)
 }
 
 /* =========================
