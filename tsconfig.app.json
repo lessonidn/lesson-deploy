@@ -2,11 +2,11 @@
   "compilerOptions": {
     /* Target & module */
     "target": "ESNext",
-    "module": "NodeNext",
+    "module": "ESNext",
     "jsx": "react-jsx",
 
     /* Resolusi module */
-    "moduleResolution": "NodeNext",
+    "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "moduleDetection": "force",
