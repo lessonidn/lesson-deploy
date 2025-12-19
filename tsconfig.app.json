@@ -2,7 +2,7 @@
   "compilerOptions": {
     /* Target & module */
     "target": "ESNext",
-    "module": "ESNext",
+    "module": "NodeNext",
     "jsx": "react-jsx",
 
     /* Resolusi module */
