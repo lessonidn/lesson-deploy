@@ -14,7 +14,7 @@ type SubCategory = {
   id: string
   name: string
   category_id: string
-  categories?: { id: string; name: string }   // ✅ relasi MAPEL tunggal
+  categories?: { id: string; name: string }
 }
 
 type ExamSet = {
@@ -39,9 +39,8 @@ export default function ExamSets() {
   const [durationMinutes, setDurationMinutes] = useState<number>(30)
   const [editId, setEditId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [filterSubId, setFilterSubId] = useState<string>('') // ✅ filter state
+  const [filterSubId, setFilterSubId] = useState<string>('')
 
-  // ================= LOAD =================
   async function load() {
     const { data: subsData, error: subsError } = await getSubCategories()
     const { data: examData, error: examError } = await getExamSets()
@@ -64,7 +63,6 @@ export default function ExamSets() {
     await load()
   }
 
-  // ================= SAVE =================
   async function save() {
     if (!title || !subId) return
 
@@ -92,14 +90,12 @@ export default function ExamSets() {
     load()
   }
 
-  // ================= DELETE =================
   async function remove(id: string) {
     const { error } = await softDeleteExamSet(id)
     if (error) setError(error.message)
     load()
   }
 
-  // ================= HELPERS =================
   function resetForm() {
     setTitle('')
     setSubId('')
@@ -112,7 +108,6 @@ export default function ExamSets() {
     load()
   }, [])
 
-  // ================= UI =================
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Exam Sets</h2>
@@ -192,64 +187,60 @@ export default function ExamSets() {
       {/* LIST */}
       <ul className="bg-white border rounded divide-y">
         {items
-          .filter(i => !filterSubId || i.sub_category_id === filterSubId) // ✅ filter logic
+          .filter(i => !filterSubId || i.sub_category_id === filterSubId)
           .map(i => (
-          <li key={i.id} className="p-4 flex justify-between items-center hover:bg-yellow-300 transition-colors">
-            <div>
-              <div className="font-medium flex items-center gap-2">
-                {i.title}
-
-                {i.is_published ? (
-                  <span className="text-xs px-2 py-0.5 rounded bg-green-100 text-green-700">
-                    Published
-                  </span>
-                ) : (
-                  <span className="text-xs px-2 py-0.5 rounded bg-gray-200 text-gray-600">
-                    Draft
-                  </span>
-                )}
+            <li key={i.id} className="p-4 flex justify-between items-center hover:bg-yellow-300 transition-colors">
+              <div>
+                <div className="font-medium flex items-center gap-2">
+                  {i.title}
+                  {i.is_published ? (
+                    <span className="text-xs px-2 py-0.5 rounded bg-green-100 text-green-700">
+                      Published
+                    </span>
+                  ) : (
+                    <span className="text-xs px-2 py-0.5 rounded bg-gray-200 text-gray-600">
+                      Draft
+                    </span>
+                  )}
+                </div>
+                <div className="text-sm text-gray-500">
+                  {i.sub_categories?.name} -- {i.sub_categories?.categories?.name} · ⏱ {i.duration_minutes} menit
+                </div>
               </div>
 
-              <div className="text-sm text-gray-500">
-                {i.sub_categories?.name} -- {i.sub_categories?.categories?.name} · ⏱ {i.duration_minutes} menit
-              </div>
-            </div>
-
-            <div className="flex gap-2 items-center">
-              <button
-                onClick={() => handleToggle(i.id, !i.is_published)}
-                className={`px-3 py-1 rounded text-white text-sm
-                  ${
-                    i.is_published
+              <div className="flex gap-2 items-center">
+                <button
+                  onClick={() => handleToggle(i.id, !i.is_published)}
+                  className={`px-3 py-1 rounded text-white text-sm
+                    ${i.is_published
                       ? 'bg-gray-500 hover:bg-gray-600'
-                      : 'bg-green-600 hover:bg-green-700'
-                  }`}
-              >
-                {i.is_published ? 'Unpublish' : 'Publish'}
-              </button>
+                      : 'bg-green-600 hover:bg-green-700'}`}
+                >
+                  {i.is_published ? 'Unpublish' : 'Publish'}
+                </button>
 
-              <button
-                onClick={() => {
-                  setEditId(i.id)
-                  setTitle(i.title)
-                  setSubId(i.sub_category_id)
-                  setDurationMinutes(i.duration_minutes || 30)
-                  window.scrollTo({ top: 0, behavior: 'smooth' }) // ✅ scroll ke atas
-                }}
-                className="px-3 py-1 bg-yellow-500 text-white rounded text-sm"
-              >
-                Edit
-              </button>
+                <button
+                  onClick={() => {
+                    setEditId(i.id)
+                    setTitle(i.title)
+                    setSubId(i.sub_category_id)
+                    setDurationMinutes(i.duration_minutes || 30)
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }}
+                  className="px-3 py-1 bg-yellow-500 text-white rounded text-sm"
+                >
+                  Edit
+                </button>
 
-              <button
-                onClick={() => remove(i.id)}
-                className="px-3 py-1 bg-red-600 text-white rounded text-sm"
-              >
-                Delete
-              </button>
-            </div>
-          </li>
-        ))}
+                <button
+                  onClick={() => remove(i.id)}
+                  className="px-3 py-1 bg-red-600 text-white rounded text-sm"
+                >
+                  Delete
+                </button>
+              </div>
+            </li>
+          ))}
       </ul>
     </div>
   )
