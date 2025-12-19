@@ -9,13 +9,31 @@ const menus = [
   { to: '/admin/choices', label: 'Choices' },
 ]
 
-export default function Sidebar() {
+type SidebarProps = {
+  open: boolean
+  onClose: () => void
+}
+
+export default function Sidebar({ open, onClose }: SidebarProps) {
   return (
-    <aside className="w-64 bg-slate-900 text-white flex flex-col">
-      <div className="h-14 flex items-center px-6 font-bold border-b border-slate-700">
+    <aside
+      className={`fixed inset-y-0 left-0 w-64 bg-slate-900 text-white flex flex-col transform transition-transform duration-300
+        ${open ? 'translate-x-0' : '-translate-x-full'}
+        md:translate-x-0 md:static md:shadow-none z-50`}
+    >
+      {/* Header */}
+      <div className="h-14 flex items-center justify-between px-6 font-bold border-b border-slate-700">
         BIMBEL ADMIN
+        {/* Tombol close hanya muncul di mobile */}
+        <button
+          className="md:hidden text-slate-300 hover:text-white"
+          onClick={onClose}
+        >
+          ✕
+        </button>
       </div>
 
+      {/* Menu */}
       <nav className="flex-1 px-4 py-4 space-y-2">
         {menus.map(m => (
           <NavLink
@@ -28,6 +46,7 @@ export default function Sidebar() {
                   : 'text-slate-300 hover:bg-slate-800'
               }`
             }
+            onClick={onClose} // tutup sidebar setelah klik menu di mobile
           >
             {m.label}
           </NavLink>

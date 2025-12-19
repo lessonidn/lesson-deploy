@@ -72,6 +72,7 @@ export async function getSubCategories(categoryId?: string) {
   if (categoryId) {
     query = query.eq('category_id', categoryId)
   }
+
   return query
 }
 
@@ -90,21 +91,19 @@ export async function updateSubCategory(
   id: string,
   payload: { name?: string; category_id?: string }
 ) {
-  const updateData: Record<string, any> = {}
+  const updateData: { name?: string; category_id?: string } = {}
 
-  if (payload.name && payload.name.trim().length > 0) {
+  if (payload.name !== undefined) {
     updateData.name = payload.name
-    updateData.slug = payload.name.toLowerCase().replace(/\s+/g, '-')
   }
-  if (payload.category_id) {
+  if (payload.category_id !== undefined) {
     updateData.category_id = payload.category_id
   }
 
-  if (Object.keys(updateData).length === 0) {
-    return { data: null, error: null }
-  }
-
-  return supabase.from('sub_categories').update(updateData).eq('id', id)
+  return supabase
+    .from('sub_categories')
+    .update(updateData)
+    .eq('id', id)
 }
 
 export async function softDeleteSubCategory(id: string) {
@@ -117,11 +116,28 @@ export async function softDeleteSubCategory(id: string) {
 export async function getExamSets(subCategoryId?: string) {
   let query = supabase
     .from('exam_sets')
-    .select('id, title, sub_category_id, duration_minutes, sub_categories ( id, name )')
+    .select(`
+      id,
+      title,
+      sub_category_id,
+      duration_minutes,
+      is_published,
+      sub_categories (
+        id,
+        name,
+        categories:categories!sub_categories_category_id_fkey (
+          id,
+          name
+        )
+      )
+    `)
     .eq('is_deleted', false)
     .order('title')
 
-  if (subCategoryId) query = query.eq('sub_category_id', subCategoryId)
+  if (subCategoryId) {
+    query = query.eq('sub_category_id', subCategoryId)
+  }
+
   return query
 }
 
@@ -132,17 +148,23 @@ export async function createExamSet(payload: {
 }) {
   return supabase.from('exam_sets').insert([
     {
-      ...payload,
+      title: payload.title,
+      sub_category_id: payload.sub_category_id,
+      duration_minutes: payload.duration_minutes ?? 30, // ✅ default 30 menit
       is_deleted: false,
+      is_published: false, // tetap draft
     },
   ])
 }
 
-export async function updateExamSet(id: string, payload: {
-  title?: string
-  sub_category_id?: string
-  duration_minutes?: number
-}) {
+export async function updateExamSet(
+  id: string,
+  payload: {
+    title?: string
+    sub_category_id?: string
+    duration_minutes?: number
+  }
+) {
   return supabase
     .from('exam_sets')
     .update(payload)
@@ -215,5 +237,16 @@ export async function updateChoice(id: string, text: string, isCorrect: boolean,
 export async function deleteChoice(id: string) {
   return supabase.from('choices')
     .delete()
+    .eq('id', id)
+}
+
+// ================= PUBLISH / UNPUBLISH =================
+export async function togglePublishExamSet(
+  id: string,
+  isPublished: boolean
+) {
+  return supabase
+    .from('exam_sets')
+    .update({ is_published: isPublished })
     .eq('id', id)
 }

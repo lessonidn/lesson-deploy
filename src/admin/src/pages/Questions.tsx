@@ -44,7 +44,7 @@ export default function Questions() {
     if (!text || !setId) return
 
     if (editId) {
-      const { error } = await updateQuestion(editId, text, setId) // ✅ kirim exam_set_id
+      const { error } = await updateQuestion(editId, text, setId)
       if (error) setError(error.message)
       setEditId(null)
     } else {
@@ -65,7 +65,6 @@ export default function Questions() {
   function cancelEdit() {
     setEditId(null)
     setText('')
-    // exam tetap dipilih agar tidak repot pilih lagi
   }
 
   useEffect(() => {
@@ -77,12 +76,12 @@ export default function Questions() {
     : items
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 bg-gray-50 min-h-screen p-4 sm:p-6">
       <h2 className="text-xl font-semibold">Questions</h2>
 
       <div className="flex gap-2">
         <select
-          className="border px-3 py-2 rounded"
+          className="border px-3 py-2 rounded max-w-xs truncate" // ✅ batasi lebar dropdown
           value={setId}
           onChange={e => setSetId(e.target.value)}
         >
@@ -103,7 +102,7 @@ export default function Questions() {
 
         <button
           onClick={save}
-          className="bg-indigo-600 text-white px-4 rounded"
+          className="bg-indigo-600 text-white px-4 py-2 rounded"
         >
           {editId ? 'Update' : 'Tambah'}
         </button>
@@ -111,7 +110,7 @@ export default function Questions() {
         {editId && (
           <button
             onClick={cancelEdit}
-            className="bg-gray-400 text-white px-4 rounded"
+            className="bg-gray-400 text-white px-4 py-2 rounded"
           >
             Batal
           </button>
@@ -120,49 +119,60 @@ export default function Questions() {
 
       {error && <p className="text-red-500">{error}</p>}
 
-      <table className="w-full border-collapse bg-white border rounded">
-        <thead>
-          <tr className="bg-gray-100 text-center">
-            <th className="p-2 border">Soal - Soal</th>
-            <th className="p-2 border">Lembar Soal</th>
-            <th className="p-2 border">Aksi</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredItems.map(q => (
-            <tr
-              key={q.id}
-              className="hover:bg-sky-300 transition-colors" // ✅ hover efek
-            >
-              <td className="p-2 border">{q.text}</td>
-              <td className="p-2 border text-sm text-gray-600 text-center">
-                {q.exam_title || '-'}
-              </td>
-              <td className="p-2 border">
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => {
-                      setEditId(q.id)
-                      setText(q.text)
-                      setSetId(q.exam_set_id)
-                      window.scrollTo({ top: 0, behavior: 'smooth' }) // ✅ scroll ke atas
-                    }}
-                    className="px-2 py-1 bg-yellow-500 text-white rounded"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => remove(q.id)}
-                    className="px-2 py-1 bg-red-600 text-white rounded"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </td>
+      {/* ✅ Info jumlah soal */}
+      <div className="text-sm text-gray-600">
+        {setId
+          ? `Jumlah soal di lembar "${sets.find(s => s.id === setId)?.title || '-'}": ${filteredItems.length}`
+          : `Total semua soal: ${filteredItems.length}`}
+      </div>
+
+      <div className="overflow-x-auto rounded shadow bg-white">
+        <table className="min-w-full border-collapse">
+          <thead>
+            <tr className="bg-gray-100 text-center">
+              <th className="p-2 border w-2/3">Soal - Soal</th>
+              <th className="p-2 border w-1/3">Lembar Soal</th>
+              <th className="p-2 border">Aksi</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {filteredItems.map(q => (
+              <tr
+                key={q.id}
+                className="hover:bg-yellow-300 transition-colors"
+              >
+                <td className="p-2 border">{q.text}</td>
+                <td className="p-2 border text-sm text-gray-600 text-center truncate max-w-[200px]" title={q.exam_title}>
+                  <span className="inline-block px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs">
+                  {q.exam_title || '-'}
+                  </span>
+                </td>
+                <td className="p-2 border">
+                  <div className="flex gap-2 ">
+                    <button
+                      onClick={() => {
+                        setEditId(q.id)
+                        setText(q.text)
+                        setSetId(q.exam_set_id)
+                        window.scrollTo({ top: 0, behavior: 'smooth' })
+                      }}
+                      className="px-2 py-1 bg-yellow-500 text-white rounded"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => remove(q.id)}
+                      className="px-2 py-1 bg-red-600 text-white rounded"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }

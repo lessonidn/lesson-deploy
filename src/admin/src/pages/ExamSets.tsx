@@ -1,16 +1,20 @@
 import { useEffect, useState } from 'react'
+import { ClockIcon } from '@heroicons/react/24/outline'
 import {
   getSubCategories,
   getExamSets,
   createExamSet,
   updateExamSet,
   softDeleteExamSet,
+  togglePublishExamSet
 } from '../lib/quizApi'
 
 // ================= TYPES =================
 type SubCategory = {
   id: string
   name: string
+  category_id: string
+  categories?: { id: string; name: string }   // ✅ relasi MAPEL tunggal
 }
 
 type ExamSet = {
@@ -18,10 +22,12 @@ type ExamSet = {
   title: string
   sub_category_id: string
   duration_minutes: number
+  is_published: boolean
   sub_categories?: {
     id: string
     name: string
-  }[]
+    categories?: { id: string; name: string }
+  }
 }
 
 // ================= COMPONENT =================
@@ -33,6 +39,7 @@ export default function ExamSets() {
   const [durationMinutes, setDurationMinutes] = useState<number>(30)
   const [editId, setEditId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [filterSubId, setFilterSubId] = useState<string>('') // ✅ filter state
 
   // ================= LOAD =================
   async function load() {
@@ -41,10 +48,20 @@ export default function ExamSets() {
 
     if (subsError || examError) {
       setError(subsError?.message || examError?.message || 'Gagal memuat data')
-    } else {
-      setSubs(subsData || [])
-      setItems(examData || [])
+      return
     }
+
+    setSubs((subsData ?? []) as unknown as SubCategory[])
+    setItems((examData ?? []) as unknown as ExamSet[])
+  }
+
+  async function handleToggle(id: string, isPublished: boolean) {
+    const { error } = await togglePublishExamSet(id, isPublished)
+    if (error) {
+      setError(error.message)
+      return
+    }
+    await load()
   }
 
   // ================= SAVE =================
@@ -59,11 +76,16 @@ export default function ExamSets() {
 
     if (editId) {
       const { error } = await updateExamSet(editId, payload)
-      if (error) setError(error.message)
-      setEditId(null)
+      if (error) {
+        setError(error.message)
+        return
+      }
     } else {
       const { error } = await createExamSet(payload)
-      if (error) setError(error.message)
+      if (error) {
+        setError(error.message)
+        return
+      }
     }
 
     resetForm()
@@ -83,6 +105,7 @@ export default function ExamSets() {
     setSubId('')
     setDurationMinutes(30)
     setEditId(null)
+    setError(null)
   }
 
   useEffect(() => {
@@ -104,7 +127,7 @@ export default function ExamSets() {
           <option value="">Pilih Sub Kategori</option>
           {subs.map(s => (
             <option key={s.id} value={s.id}>
-              {s.name}
+              {s.name} -- {s.categories?.name || '-'}
             </option>
           ))}
         </select>
@@ -116,19 +139,19 @@ export default function ExamSets() {
           onChange={e => setTitle(e.target.value)}
         />
 
-        <input
-          type="number"
-          min={1}
-          className="border px-3 py-2 rounded w-full"
-          placeholder="Durasi (menit)"
-          value={durationMinutes}
-          onChange={e => setDurationMinutes(Number(e.target.value))}
-        />
-
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          <ClockIcon className="h-5 w-5 text-indigo-800" />
+          <input
+            type="number"
+            min={1}
+            className="border px-3 py-2 rounded w-32"
+            placeholder="Durasi (menit)"
+            value={durationMinutes}
+            onChange={e => setDurationMinutes(Number(e.target.value))}
+          />
           <button
             onClick={save}
-            className="bg-indigo-600 text-white px-4 rounded"
+            className="bg-indigo-600 text-white px-4 py-2 rounded"
           >
             {editId ? 'Update' : 'Tambah'}
           </button>
@@ -136,7 +159,7 @@ export default function ExamSets() {
           {editId && (
             <button
               onClick={resetForm}
-              className="bg-gray-400 text-white px-4 rounded"
+              className="bg-gray-400 text-white px-4 py-2 rounded"
             >
               Batal
             </button>
@@ -145,38 +168,82 @@ export default function ExamSets() {
       </div>
 
       <p className="text-sm text-gray-500">
-        ⏱ Default durasi: <b>30 menit</b>. Bisa diubah (contoh: 45 menit).
+        ⏱ Default durasi <b>30 menit</b>, bisa diubah (contoh: 120 menit).
       </p>
 
       {error && <p className="text-red-500">{error}</p>}
 
+      {/* FILTER */}
+      <div>
+        <select
+          className="border px-3 py-2 rounded"
+          value={filterSubId}
+          onChange={e => setFilterSubId(e.target.value)}
+        >
+          <option value="">Filter: Semua Sub Kategori</option>
+          {subs.map(s => (
+            <option key={s.id} value={s.id}>
+              {s.name} -- {s.categories?.name || '-'}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {/* LIST */}
       <ul className="bg-white border rounded divide-y">
-        {items.map(i => (
-          <li key={i.id} className="p-4 flex justify-between items-center">
+        {items
+          .filter(i => !filterSubId || i.sub_category_id === filterSubId) // ✅ filter logic
+          .map(i => (
+          <li key={i.id} className="p-4 flex justify-between items-center hover:bg-yellow-300 transition-colors">
             <div>
-              <div className="font-medium">{i.title}</div>
+              <div className="font-medium flex items-center gap-2">
+                {i.title}
+
+                {i.is_published ? (
+                  <span className="text-xs px-2 py-0.5 rounded bg-green-100 text-green-700">
+                    Published
+                  </span>
+                ) : (
+                  <span className="text-xs px-2 py-0.5 rounded bg-gray-200 text-gray-600">
+                    Draft
+                  </span>
+                )}
+              </div>
+
               <div className="text-sm text-gray-500">
-                {i.sub_categories?.[0]?.name} · ⏱ {i.duration_minutes} menit
+                {i.sub_categories?.name} -- {i.sub_categories?.categories?.name} · ⏱ {i.duration_minutes} menit
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
+              <button
+                onClick={() => handleToggle(i.id, !i.is_published)}
+                className={`px-3 py-1 rounded text-white text-sm
+                  ${
+                    i.is_published
+                      ? 'bg-gray-500 hover:bg-gray-600'
+                      : 'bg-green-600 hover:bg-green-700'
+                  }`}
+              >
+                {i.is_published ? 'Unpublish' : 'Publish'}
+              </button>
+
               <button
                 onClick={() => {
                   setEditId(i.id)
                   setTitle(i.title)
                   setSubId(i.sub_category_id)
                   setDurationMinutes(i.duration_minutes || 30)
+                  window.scrollTo({ top: 0, behavior: 'smooth' }) // ✅ scroll ke atas
                 }}
-                className="px-3 py-1 bg-yellow-500 text-white rounded"
+                className="px-3 py-1 bg-yellow-500 text-white rounded text-sm"
               >
                 Edit
               </button>
 
               <button
                 onClick={() => remove(i.id)}
-                className="px-3 py-1 bg-red-600 text-white rounded"
+                className="px-3 py-1 bg-red-600 text-white rounded text-sm"
               >
                 Delete
               </button>

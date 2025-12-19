@@ -31,7 +31,6 @@ export default function QuizPage() {
   const [timeLeft, setTimeLeft] = useState<number>(0)
   const [isTimeUp, setIsTimeUp] = useState(false)
 
-  // --- Fungsi Skip---
   function getUnansweredIndexes() {
     return questions
       .map((q, index) => (answers[q.id] ? null : index))
@@ -39,33 +38,22 @@ export default function QuizPage() {
   }
 
   function goNext() {
-    // kalau masih ada soal berikutnya → lanjut normal
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(i => i + 1)
       return
     }
-
-    // sudah di soal terakhir
     const unanswered = getUnansweredIndexes()
-
-    // kalau masih ada yang belum dijawab → lompat ke soal pertama yg kosong
     if (unanswered.length > 0) {
       setCurrentIndex(unanswered[0])
       return
     }
-
-    // kalau semua sudah dijawab → submit
     submitQuiz()
   }
 
-
-  // --- Fungsi submit ---
   const submitQuiz = useCallback(async () => {
     if (submitting || isTimeUp) return
     setSubmitting(true)
-
     try {
-      // 1️⃣ insert attempt
       const { data: attempt, error: attemptError } = await supabase
         .from('quiz_attempts')
         .insert({
@@ -74,14 +62,11 @@ export default function QuizPage() {
         })
         .select()
         .single()
-
       if (attemptError) throw attemptError
 
-      // 2️⃣ siapkan jawaban user
       const answersPayload = questions.map(q => {
         const selectedChoiceId = answers[q.id]
         const selectedChoice = q.choices.find(c => c.id === selectedChoiceId)
-
         return {
           quiz_attempt_id: attempt.id,
           question_id: q.id,
@@ -90,17 +75,13 @@ export default function QuizPage() {
         }
       })
 
-      // 3️⃣ simpan jawaban
       const { error: answerError } = await supabase
         .from('quiz_answers')
         .insert(answersPayload)
-
       if (answerError) throw answerError
 
-      // 4️⃣ hitung skor
       let score = 0
       let correctCount = 0
-
       answersPayload.forEach(a => {
         if (a.is_correct) {
           correctCount++
@@ -109,16 +90,11 @@ export default function QuizPage() {
         }
       })
 
-      // 5️⃣ update attempt
       await supabase
         .from('quiz_attempts')
-        .update({
-          score,
-          correct_answers: correctCount,
-        })
+        .update({ score, correct_answers: correctCount })
         .eq('id', attempt.id)
 
-      // 6️⃣ redirect
       navigate(`/result/${attempt.id}`)
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -136,19 +112,16 @@ export default function QuizPage() {
     loadQuiz(examId)
   }, [examId])
 
-  // efek untuk countdown
   useEffect(() => {
     if (timeLeft <= 0) {
-      if (timeLeft === 0) return // ⬅️ cegah auto submit saat awal
+      if (timeLeft === 0) return
       setIsTimeUp(true)
       submitQuiz()
       return
     }
-
     const timer: ReturnType<typeof setInterval> = setInterval(() => {
       setTimeLeft(prev => prev - 1)
     }, 1000)
-
     return () => clearInterval(timer)
   }, [timeLeft, submitQuiz])
 
@@ -156,59 +129,48 @@ export default function QuizPage() {
     setLoading(true)
     setError(null)
 
-    // 1️⃣ ambil exam (durasi)
-const { data: exam, error: examError } = await supabase
-  .from('exam_sets')
-  .select('duration_minutes')
-  .eq('id', examSetId)
-  .single()
+    const { data: exam, error: examError } = await supabase
+      .from('exam_sets')
+      .select('duration_minutes')
+      .eq('id', examSetId)
+      .single()
+    if (examError || !exam) {
+      setError('Gagal memuat exam')
+      setLoading(false)
+      return
+    }
+    setTimeLeft(exam.duration_minutes * 60)
 
-if (examError || !exam) {
-  setError('Gagal memuat exam')
-  setLoading(false)
-  return
-}
-
-setTimeLeft(exam.duration_minutes * 60)
-
-  // 2️⃣ ambil soal
-  const { data: qs, error: qError } = await supabase
-    .from('questions')
-    .select(`
-      id,
-      text,
-      points,
-      choices (
+    const { data: qs, error: qError } = await supabase
+      .from('questions')
+      .select(`
         id,
         text,
-        is_correct
-      )
-    `)
-    .eq('exam_set_id', examSetId)
-    .order('created_at')
-
-  if (qError) {
-    setError(qError.message)
+        points,
+        choices (
+          id,
+          text,
+          is_correct
+        )
+      `)
+      .eq('exam_set_id', examSetId)
+      .order('created_at')
+    if (qError) {
+      setError(qError.message)
+      setLoading(false)
+      return
+    }
+    const shuffledQuestions = shuffle(qs || []).map(q => ({
+      ...q,
+      choices: shuffle(q.choices || []),
+    }))
+    setQuestions(shuffledQuestions)
     setLoading(false)
-    return
-  }
-
-  // 🔀 shuffle soal + pilihan jawaban
-  const shuffledQuestions = shuffle(qs || []).map(q => ({
-    ...q,
-    choices: shuffle(q.choices || []),
-  }))
-
-  setQuestions(shuffledQuestions)
-  setLoading(false)
   }
 
   function selectAnswer(questionId: string, choiceId: string) {
     if (isTimeUp) return
-    setAnswers(prev => ({
-      ...prev,
-      [questionId]: choiceId,
-    }))
+    setAnswers(prev => ({ ...prev, [questionId]: choiceId }))
   }
 
   function formatTime(seconds: number) {
@@ -220,15 +182,9 @@ setTimeLeft(exam.duration_minutes * 60)
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading…</div>
   }
-
   if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-red-500">
-        {error}
-      </div>
-    )
+    return <div className="min-h-screen flex items-center justify-center text-red-500">{error}</div>
   }
-
 
   const question = questions[currentIndex]
   const selected = answers[question.id]
@@ -240,6 +196,13 @@ setTimeLeft(exam.duration_minutes * 60)
 
           {/* HEADER */}
           <div className="flex justify-between items-center text-sm">
+            <button
+              onClick={() => navigate('/')}
+              className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium"
+            >
+              ← Kembali ke Beranda
+            </button>
+
             <div className="text-gray-600">
               Soal {currentIndex + 1} / {questions.length}
             </div>
@@ -260,9 +223,7 @@ setTimeLeft(exam.duration_minutes * 60)
           )}
 
           {/* QUESTION */}
-          <h2 className="text-xl font-semibold text-gray-800">
-            {question.text}
-          </h2>
+          <h2 className="text-xl font-semibold text-gray-800">{question.text}</h2>
 
           {/* CHOICES */}
           <div className="space-y-3">
@@ -270,11 +231,7 @@ setTimeLeft(exam.duration_minutes * 60)
               <label
                 key={c.id}
                 className={`flex items-center gap-3 p-4 rounded-lg border transition
-                  ${
-                    selected === c.id
-                      ? 'border-indigo-600 bg-indigo-50'
-                      : 'hover:bg-gray-50'
-                  }
+                  ${selected === c.id ? 'border-indigo-600 bg-indigo-50' : 'hover:bg-gray-50'}
                   ${isTimeUp ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}
                 `}
               >
@@ -287,9 +244,7 @@ setTimeLeft(exam.duration_minutes * 60)
                   onChange={() => selectAnswer(question.id, c.id)}
                   className="accent-indigo-600"
                 />
-                <span className="font-medium">
-                  {String.fromCharCode(65 + idx)}.
-                </span>
+                <span className="font-medium">{String.fromCharCode(65 + idx)}.</span>
                 <span>{c.text}</span>
               </label>
             ))}

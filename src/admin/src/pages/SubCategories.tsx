@@ -13,7 +13,7 @@ type SubCategory = {
   id: string
   name: string
   category_id: string
-  categories?: { id: string; name: string }[] // hasil embed berupa array
+  categories?: { id: string; name: string }   // object tunggal
 }
 
 export default function SubCategories() {
@@ -34,7 +34,7 @@ export default function SubCategories() {
     } else {
       setError(null)
       setCats(catsData || [])
-      setItems(subsData || [])
+      setItems((subsData ?? []) as unknown as SubCategory[])
     }
   }
 
@@ -50,8 +50,7 @@ export default function SubCategories() {
       if (error) setError(error.message)
     }
 
-    setName('')
-    setCatId('')
+    resetForm()
     await load(filterCatId || undefined)
   }
 
@@ -61,18 +60,25 @@ export default function SubCategories() {
     await load(filterCatId || undefined)
   }
 
-  function cancelEdit() {
+  function resetForm() {
     setEditId(null)
     setName('')
     setCatId('')
+    setError(null)
   }
 
-  // ✅ Load awal agar list muncul sebelum filter diubah
+  function startEdit(i: SubCategory) {
+    setEditId(i.id)
+    setName(i.name)
+    setCatId(i.category_id)
+    // ✅ langsung scroll ke atas agar form terlihat
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   useEffect(() => {
     load(undefined)
   }, [])
 
-  // ✅ Reload saat filter MAPEL berubah (backend filter)
   useEffect(() => {
     load(filterCatId || undefined)
   }, [filterCatId])
@@ -80,7 +86,7 @@ export default function SubCategories() {
   const filteredItems = items
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 bg-gray-50 min-h-screen p-4 sm:p-6">
       <h2 className="text-xl font-semibold">Sub Categories</h2>
 
       {/* FORM INPUT */}
@@ -99,18 +105,24 @@ export default function SubCategories() {
         </select>
 
         <input
-          className="border px-3 py-2 rounded"
-          placeholder="Nama Judul (contoh: KELAS 4)"
+          className="border px-3 py-2 rounded w-80"
+          placeholder="isi kelas, contoh: KELAS 4"
           value={name}
           onChange={e => setName(e.target.value)}
         />
 
-        <button onClick={save} className="bg-indigo-600 text-white px-4 rounded">
+        <button
+          onClick={save}
+          className="bg-indigo-600 text-white px-4 py-2 rounded"
+        >
           {editId ? 'Update' : 'Tambah'}
         </button>
 
         {editId && (
-          <button onClick={cancelEdit} className="bg-gray-400 text-white px-4 rounded">
+          <button
+            onClick={resetForm}
+            className="bg-gray-400 text-white px-4 py-2 rounded"
+          >
             Batal
           </button>
         )}
@@ -137,26 +149,24 @@ export default function SubCategories() {
       {/* LIST */}
       <ul className="bg-white border rounded divide-y">
         {filteredItems.map(i => (
-          <li key={i.id} className="p-3 flex justify-between hover:bg-gray-50 transition-colors">
+          <li
+            key={i.id}
+            className="p-3 flex justify-between hover:bg-yellow-300 transition-colors"
+          >
             <span>
-              {i.name} --{' '}
-              <span className="text-sm text-gray-600">
-                {i.categories?.[0]?.name || '-'}
-              </span>
+              {i.name} -- {i.categories?.name || '-'}
             </span>
             <span className="flex gap-2">
               <button
-                onClick={() => {
-                  setEditId(i.id)
-                  setName(i.name)
-                  setCatId(i.category_id)
-                  window.scrollTo({ top: 0, behavior: 'smooth' })
-                }}
-                className="px-2 py-1 bg-yellow-500 text-white rounded"
+                onClick={() => startEdit(i)}
+                className="px-3 py-1 bg-yellow-500 text-white rounded"
               >
                 Edit
               </button>
-              <button onClick={() => remove(i.id)} className="px-2 py-1 bg-red-600 text-white rounded">
+              <button
+                onClick={() => remove(i.id)}
+                className="px-3 py-1 bg-red-600 text-white rounded"
+              >
                 Delete
               </button>
             </span>
