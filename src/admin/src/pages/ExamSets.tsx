@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ClockIcon } from '@heroicons/react/24/outline'
+import { FaRegClock } from 'react-icons/fa'
 import {
   getSubCategories,
   getExamSets,
@@ -140,7 +140,7 @@ export default function ExamSets() {
         />
 
         <div className="flex items-center gap-2">
-          <ClockIcon className="h-5 w-5 text-indigo-800" />
+          <FaRegClock className="h-5 w-5 text-indigo-800" />
           <input
             type="number"
             min={1}
