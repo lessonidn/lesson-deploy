@@ -98,7 +98,7 @@ export async function softDeleteSubCategory(id: string) {
 export async function getExamSets(subCategoryId?: string) {
   let query = supabase
     .from('exam_sets')
-    .select('id, title, sub_category_id, sub_categories ( id, name )')
+    .select('id, title, sub_category_id, duration_minutes, sub_categories ( id, name )')
     .eq('is_deleted', false)
     .order('title')
 
@@ -106,24 +106,33 @@ export async function getExamSets(subCategoryId?: string) {
   return query
 }
 
-export async function createExamSet(title: string, subCategoryId: string) {
+export async function createExamSet(payload: {
+  title: string
+  sub_category_id: string
+  duration_minutes?: number
+}) {
   return supabase.from('exam_sets').insert([
     {
-      title,
-      sub_category_id: subCategoryId,
+      ...payload,
       is_deleted: false,
     },
   ])
 }
 
-export async function updateExamSet(id: string, title: string) {
-  return supabase.from('exam_sets')
-    .update({ title })
+export async function updateExamSet(id: string, payload: {
+  title?: string
+  sub_category_id?: string
+  duration_minutes?: number
+}) {
+  return supabase
+    .from('exam_sets')
+    .update(payload)
     .eq('id', id)
 }
 
 export async function softDeleteExamSet(id: string) {
-  return supabase.from('exam_sets')
+  return supabase
+    .from('exam_sets')
     .update({ is_deleted: true })
     .eq('id', id)
 }
@@ -141,23 +150,24 @@ export async function getQuestions(examSetId?: string) {
   return query
 }
 
-export async function createQuestion(text: string, examSetId: string) {
-  return supabase.from('questions').insert([
-    { text, exam_set_id: examSetId },
-  ])
+// Tambah question baru
+export async function createQuestion(text: string, exam_set_id: string) {
+  return supabase.from('questions').insert([{ text, exam_set_id }])
 }
 
-export async function updateQuestion(id: string, text: string) {
-  return supabase.from('questions')
-    .update({ text })
+// Update question (text + exam_set_id)
+export async function updateQuestion(id: string, text: string, exam_set_id: string) {
+  return supabase
+    .from('questions')
+    .update({ text, exam_set_id })
     .eq('id', id)
 }
 
+// Hapus question
 export async function deleteQuestion(id: string) {
-  return supabase.from('questions')
-    .delete()
-    .eq('id', id)
+  return supabase.from('questions').delete().eq('id', id)
 }
+
 
 /* =========================
    5. Choices
@@ -165,20 +175,21 @@ export async function deleteQuestion(id: string) {
 export async function getChoices(questionId: string) {
   return supabase
     .from('choices')
-    .select('id, text, is_correct, question_id')
+    .select('id, text, is_correct, question_id, explanation')
     .eq('question_id', questionId)
     .order('id')
 }
 
-export async function createChoice(questionId: string, text: string, isCorrect: boolean) {
-  return supabase.from('choices').insert([
-    { question_id: questionId, text, is_correct: isCorrect },
-  ])
+export async function createChoice(questionId: string, text: string, isCorrect: boolean, explanation?: string) {
+  return supabase
+    .from('choices')
+    .insert([{ question_id: questionId, text, is_correct: isCorrect, explanation }])
 }
 
-export async function updateChoice(id: string, text: string, isCorrect: boolean) {
-  return supabase.from('choices')
-    .update({ text, is_correct: isCorrect })
+export async function updateChoice(id: string, text: string, isCorrect: boolean, explanation?: string) {
+  return supabase
+    .from('choices')
+    .update({ text, is_correct: isCorrect, explanation })
     .eq('id', id)
 }
 

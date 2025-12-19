@@ -17,6 +17,7 @@ type Question = {
   text: string
   exam_set_id: string
   exam_title: string
+  exam_set?: ExamSet
 }
 
 export default function Questions() {
@@ -35,7 +36,7 @@ export default function Questions() {
       setError(setsError?.message || questionsError?.message || 'Gagal memuat data')
     } else {
       setSets(setsData || [])
-      setItems(questionsData || [])   // langsung set tanpa normalized
+      setItems(questionsData || [])
     }
   }
 
@@ -43,7 +44,7 @@ export default function Questions() {
     if (!text || !setId) return
 
     if (editId) {
-      const { error } = await updateQuestion(editId, text)
+      const { error } = await updateQuestion(editId, text, setId) // ✅ kirim exam_set_id
       if (error) setError(error.message)
       setEditId(null)
     } else {
@@ -51,7 +52,6 @@ export default function Questions() {
       if (error) setError(error.message)
     }
 
-    // reset hanya text, exam tetap dipilih
     setText('')
     load()
   }
@@ -71,6 +71,10 @@ export default function Questions() {
   useEffect(() => {
     load()
   }, [])
+
+  const filteredItems = setId
+    ? items.filter(q => q.exam_set_id === setId)
+    : items
 
   return (
     <div className="space-y-4">
@@ -116,7 +120,6 @@ export default function Questions() {
 
       {error && <p className="text-red-500">{error}</p>}
 
-      {/* ubah jadi tabel agar ada kolom exam */}
       <table className="w-full border-collapse bg-white border rounded">
         <thead>
           <tr className="bg-gray-100 text-center">
@@ -126,8 +129,11 @@ export default function Questions() {
           </tr>
         </thead>
         <tbody>
-          {items.map(q => (
-            <tr key={q.id}>
+          {filteredItems.map(q => (
+            <tr
+              key={q.id}
+              className="hover:bg-sky-300 transition-colors" // ✅ hover efek
+            >
               <td className="p-2 border">{q.text}</td>
               <td className="p-2 border text-sm text-gray-600 text-center">
                 {q.exam_title || '-'}
@@ -139,6 +145,7 @@ export default function Questions() {
                       setEditId(q.id)
                       setText(q.text)
                       setSetId(q.exam_set_id)
+                      window.scrollTo({ top: 0, behavior: 'smooth' }) // ✅ scroll ke atas
                     }}
                     className="px-2 py-1 bg-yellow-500 text-white rounded"
                   >

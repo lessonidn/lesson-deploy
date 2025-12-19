@@ -14,6 +14,7 @@ type Choice = {
   id: string
   text: string
   is_correct: boolean
+  explanation?: string
 }
 
 type Question = {
@@ -52,7 +53,8 @@ export default function ResultPage() {
           choices (
             id,
             text,
-            is_correct
+            is_correct,
+            explanation
           )
         )
       `)
@@ -159,14 +161,17 @@ export default function ResultPage() {
                   >
                     {c.text}
                     {c.is_correct && (
-                      <span className="ml-2 font-semibold">
-                        (Jawaban Benar)
-                      </span>
+                      <span className="ml-2 font-semibold">(Jawaban Benar)</span>
                     )}
                     {isUserAnswer && !c.is_correct && (
-                      <span className="ml-2 font-semibold">
-                        (Jawaban Kamu)
-                      </span>
+                      <span className="ml-2 font-semibold">(Jawaban Kamu)</span>
+                    )}
+
+                    {/* Tambahan: tampilkan penjelasan jawaban benar */}
+                    {c.is_correct && c.explanation && (
+                      <div className="mt-2 text-gray-600 text-sm">
+                        Penjelasan: {c.explanation}
+                      </div>
                     )}
                   </div>
                 )
