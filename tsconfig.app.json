@@ -6,7 +6,7 @@
     "jsx": "react-jsx",
 
     /* Resolusi module */
-    "moduleResolution": "nodenext",
+    "moduleResolution": "NodeNext",
     "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "moduleDetection": "force",
