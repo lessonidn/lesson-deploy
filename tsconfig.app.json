@@ -6,7 +6,7 @@
     "jsx": "react-jsx",
 
     /* Resolusi module */
-    "moduleResolution": "bundler",
+    "moduleResolution": "nodenext",
     "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "moduleDetection": "force",
