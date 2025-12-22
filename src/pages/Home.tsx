@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { supabase } from '../lib/supabaseClient'
+import { supabase } from '../lib/supabase'
 import logo from '../asset/leaf.png'
+
+/* ================= TYPES ================= */
+
+type MenuSource = 'manual' | 'category' | 'sub_category'
 
 type Category = {
   id: string
@@ -21,19 +25,65 @@ type ExamSet = {
   created_at: string
 }
 
+type Page = {
+  id: string
+  title: string
+  slug: string
+  excerpt: string | null
+  created_at: string
+}
+
 type Menu = {
   id: string
   label: string
-  url: string
+  url: string | null
   position: 'header' | 'footer'
+  parent_id: string | null
+  order: number
+  is_active: boolean
+  source: MenuSource
+  source_id: string | null
+  auto_generate: boolean
+  children?: Menu[]
 }
+
+/* ================= HELPERS ================= */
+
+function slugify(text: string) {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w-]/g, '')
+}
+
+function buildMenuTree(menus: Menu[]) {
+  const map = new Map<string, Menu>()
+  const roots: Menu[] = []
+
+  menus.forEach(m => map.set(m.id, { ...m, children: [] }))
+
+  menus.forEach(m => {
+    if (m.parent_id) {
+      map.get(m.parent_id)?.children?.push(map.get(m.id)!)
+    } else {
+      roots.push(map.get(m.id)!)
+    }
+  })
+
+  return roots
+}
+
+/* ================= COMPONENT ================= */
 
 export default function Home() {
   const [categories, setCategories] = useState<Category[]>([])
   const [subCategories, setSubCategories] = useState<SubCategory[]>([])
   const [examSets, setExamSets] = useState<ExamSet[]>([])
   const [latestExams, setLatestExams] = useState<ExamSet[]>([])
-  const [menus, setMenus] = useState<Menu[]>([])
+  const [latestPages, setLatestPages] = useState<Page[]>([])
+  const [headerMenus, setHeaderMenus] = useState<Menu[]>([])
+  const [footerMenus, setFooterMenus] = useState<Menu[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -46,11 +96,12 @@ export default function Home() {
     setLoading(true)
 
     const [
-      { data: cats, error: catErr },
-      { data: subs, error: subErr },
-      { data: exams, error: examErr },
+      { data: cats },
+      { data: subs },
+      { data: exams },
       { data: latest },
-      { data: menuData }
+      { data: menus },
+      { data: pages },
     ] = await Promise.all([
       supabase.from('categories').select('id, name').order('name'),
       supabase.from('sub_categories').select('id, name, category_id').order('name'),
@@ -67,20 +118,79 @@ export default function Home() {
         .limit(5),
       supabase
         .from('menus')
-        .select('id, label, url, position')
+        .select('*')
         .eq('is_active', true)
-        .order('order')
+        .order('order'),
+      supabase
+        .from('pages')
+        .select('id, title, slug, excerpt, created_at')
+        .eq('status', 'published')
+        .order('created_at', { ascending: false })
+        .limit(3),
     ])
 
-    if (catErr || subErr || examErr) {
+    if (!cats || !subs || !exams || !menus) {
       setError('Gagal load data')
-    } else {
-      setCategories(cats || [])
-      setSubCategories(subs || [])
-      setExamSets(exams || [])
-      setLatestExams(latest || [])
-      setMenus(menuData || [])
+      setLoading(false)
+      return
     }
+
+    setCategories(cats)
+    setSubCategories(subs)
+    setExamSets(exams)
+    setLatestExams(latest || [])
+    setLatestPages(pages || [])
+
+    /* ===== RESOLVE AUTO MENU ===== */
+
+    const resolved: Menu[] = []
+
+    menus.forEach(menu => {
+      if (menu.source === 'manual') {
+        resolved.push(menu)
+        return
+      }
+
+      if (menu.source === 'category') {
+        resolved.push(menu)
+        cats.forEach((c, i) => {
+          resolved.push({
+            id: `cat-${c.id}`,
+            label: c.name,
+            url: `/latihan/${slugify(c.name)}`,
+            position: menu.position,
+            parent_id: menu.id,
+            order: i + 1,
+            is_active: true,
+            source: 'manual',
+            source_id: c.id,
+            auto_generate: false,
+          })
+        })
+      }
+
+      if (menu.source === 'sub_category') {
+        resolved.push(menu)
+        subs.forEach((s, i) => {
+          resolved.push({
+            id: `sub-${s.id}`,
+            label: s.name,
+            url: `/latihan/${slugify(s.name)}`,
+            position: menu.position,
+            parent_id: menu.id,
+            order: i + 1,
+            is_active: true,
+            source: 'manual',
+            source_id: s.id,
+            auto_generate: false,
+          })
+        })
+      }
+    })
+
+    setHeaderMenus(buildMenuTree(resolved.filter(m => m.position === 'header')))
+    setFooterMenus(resolved.filter(m => m.position === 'footer'))
+
 
     setLoading(false)
   }
@@ -97,11 +207,13 @@ export default function Home() {
     e.title.toLowerCase().includes(search.toLowerCase())
   )
 
+  /* ================= RENDER ================= */
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* ================= HEADER ================= */}
       <header className="bg-blue-600 text-white">
-        <div className="max-w-6xl mx-auto px-4 py-7 flex justify-between items-center">
+        <div className="max-w-6xl mx-auto px-4 py-5 flex justify-between items-center">
           <div className="relative">
             <img src={logo} alt="lesson" className="absolute -top-5 right-7 h-6" />
             <h1 className="text-3xl font-bold">
@@ -110,31 +222,56 @@ export default function Home() {
             <p className="text-xs text-blue-100">The Best Choice Of Tutoring</p>
           </div>
 
-          <nav className="flex gap-6 text-sm font-medium">
-            {menus
-              .filter(m => m.position === 'header')
-              .map(m => (
-                <Link key={m.id} to={m.url} className="hover:text-sky-200">
-                  {m.label}
-                </Link>
+          <div className="flex items-center gap-6">
+            <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
+              {headerMenus.map(menu => (
+                <div key={menu.id} className="relative group">
+                  <Link to={menu.url || '#'} className="flex items-center gap-1 hover:text-sky-300">
+                    {menu.label}
+                    {menu.children?.length ? <span className="text-xs">▼</span> : null}
+                  </Link>
+
+                  {menu.children?.length ? (
+                    <div className="absolute left-0 top-full mt-2 w-52 bg-white text-gray-800 rounded-xl shadow-lg
+                                    opacity-0 invisible group-hover:opacity-100 group-hover:visible transition">
+                      {menu.children.map(child => (
+                        <Link
+                          key={child.id}
+                          to={child.url || '#'}
+                          className="block px-4 py-2 hover:bg-blue-50 text-sm"
+                        >
+                          {child.label}
+                        </Link>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
               ))}
-          </nav>
+            </nav>
+
+            <div className="relative">
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Cari latihan / ujian..."
+                className="border rounded-xl px-3 py-2 text-sm text-black w-48 pr-8"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </header>
 
-      {/* ================= SEARCH ================= */}
-      <div className="max-w-6xl mx-auto px-4 mt-6">
-        <input
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Cari latihan / ujian..."
-          className="w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-400"
-        />
-      </div>
-
       {/* ================= MAIN ================= */}
       <main className="max-w-6xl mx-auto px-4 py-10 grid md:grid-cols-4 gap-10 flex-1">
-        {/* ===== CONTENT ===== */}
+        {/* CONTENT */}
         <div className="md:col-span-3 space-y-10">
           {categories.map(cat => {
             const catSubs = subCategories.filter(s => s.category_id === cat.id)
@@ -174,8 +311,9 @@ export default function Home() {
           })}
         </div>
 
-        {/* ===== SIDEBAR (WORDPRESS STYLE) ===== */}
+        {/* SIDEBAR */}
         <aside className="space-y-6">
+          {/* Latest Exams */}
           <div className="bg-white rounded-xl p-4 border">
             <h4 className="font-semibold mb-3">Latihan Terbaru</h4>
             <ul className="space-y-2 text-sm">
@@ -184,6 +322,28 @@ export default function Home() {
                   <Link to={`/exam/${e.id}`} className="hover:text-blue-600">
                     {e.title}
                   </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Latest Pages */}
+          <div className="bg-white rounded-xl p-4 border">
+            <h4 className="font-semibold mb-3">Artikel Terbaru</h4>
+            <ul className="space-y-3 text-sm">
+              {latestPages.map(p => (
+                <li key={p.id}>
+                  <Link
+                    to={`/blog/${p.slug}`}
+                    className="font-medium hover:text-blue-600"
+                  >
+                    {p.title}
+                  </Link>
+                  {p.excerpt && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      {p.excerpt}
+                    </p>
+                  )}
                 </li>
               ))}
             </ul>
@@ -204,15 +364,13 @@ export default function Home() {
           <div>
             <h4 className="font-semibold text-white mb-2">Menu</h4>
             <ul className="space-y-2 text-sm">
-              {menus
-                .filter(m => m.position === 'footer')
-                .map(m => (
-                  <li key={m.id}>
-                    <Link to={m.url} className="hover:text-white">
-                      {m.label}
-                    </Link>
-                  </li>
-                ))}
+              {footerMenus.map(m => (
+                <li key={m.id}>
+                  <Link to={m.url || '#'} className="hover:text-white">
+                    {m.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 

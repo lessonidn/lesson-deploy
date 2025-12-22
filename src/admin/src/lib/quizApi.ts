@@ -1,5 +1,5 @@
 // src/lib/quizApi.ts
-import { supabase } from './supabase'
+import { supabase } from '../../../lib/supabase'
 
 /* =========================
    1. Categories

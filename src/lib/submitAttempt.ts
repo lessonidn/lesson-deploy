@@ -1,5 +1,5 @@
 // src/lib/submitAttempt.ts
-import { supabase } from './supabaseClient';
+import { supabase } from './supabase';
 
 export async function submitAttempt(userId: string | null, materialId: string, answers: {question_id:string, choice_id:string}[]) {
   const { data, error } = await supabase.rpc('submit_attempt', {

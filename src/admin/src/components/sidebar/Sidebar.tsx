@@ -7,6 +7,9 @@ const menus = [
   { to: '/admin/exam-sets', label: 'Exam Sets' },
   { to: '/admin/questions', label: 'Questions' },
   { to: '/admin/choices', label: 'Choices' },
+
+  // 🔥 CMS / WORDPRESS-LIKE
+  { to: '/admin/menu-manager', label: 'Menu Manager' },
 ]
 
 type SidebarProps = {
@@ -17,14 +20,15 @@ type SidebarProps = {
 export default function Sidebar({ open, onClose }: SidebarProps) {
   return (
     <aside
-      className={`fixed inset-y-0 left-0 w-64 bg-slate-900 text-white flex flex-col transform transition-transform duration-300
+      className={`fixed inset-y-0 left-0 w-64 bg-slate-900 text-white flex flex-col
+        transform transition-transform duration-300 z-50
         ${open ? 'translate-x-0' : '-translate-x-full'}
-        md:translate-x-0 md:static md:shadow-none z-50`}
+        md:translate-x-0 md:static md:shadow-none`}
     >
       {/* Header */}
       <div className="h-14 flex items-center justify-between px-6 font-bold border-b border-slate-700">
         BIMBEL ADMIN
-        {/* Tombol close hanya muncul di mobile */}
+        {/* Close (mobile only) */}
         <button
           className="md:hidden text-slate-300 hover:text-white"
           onClick={onClose}
@@ -39,14 +43,15 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
           <NavLink
             key={m.to}
             to={m.to}
+            end={m.to === '/admin'}
             className={({ isActive }) =>
-              `block rounded px-3 py-2 text-sm ${
+              `block rounded px-3 py-2 text-sm transition ${
                 isActive
                   ? 'bg-slate-700 text-white'
                   : 'text-slate-300 hover:bg-slate-800'
               }`
             }
-            onClick={onClose} // tutup sidebar setelah klik menu di mobile
+            onClick={onClose}
           >
             {m.label}
           </NavLink>

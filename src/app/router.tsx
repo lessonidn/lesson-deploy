@@ -4,6 +4,8 @@ import CategoryPage from '../pages/CategoryPage'
 import ExamPage from '../pages/ExamPage'
 import QuizPage from '../pages/QuizPage'
 import ResultPage from '../pages/ResultPage'
+import BlogDetail from '../pages/BlogDetail'
+import BlogArchive from '../pages/BlogArchive'
 
 export const userRoutes: RouteObject[] = [
   { path: '/', element: <Home /> },
@@ -11,4 +13,6 @@ export const userRoutes: RouteObject[] = [
   { path: '/exam/:id', element: <ExamPage /> },
   { path: '/quiz/:id', element: <QuizPage /> },
   { path: '/result/:attemptId', element: <ResultPage /> },
+  { path: '/blog/:slug', element: <BlogDetail /> },
+  { path: '/blog', element: <BlogArchive /> }, // ✅ ARCHIVE
 ]
