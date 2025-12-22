@@ -30,12 +30,11 @@ export default function Menus() {
   const [menus, setMenus] = useState<Menu[]>([])
   const sensors = useSensors(
     useSensor(PointerSensor, {
-        activationConstraint: {
+      activationConstraint: {
         distance: 5, // ← gerak dikit langsung drag
-        },
+      },
     })
-    )
-
+  )
 
   useEffect(() => {
     loadMenus()
@@ -54,44 +53,43 @@ export default function Menus() {
 
   /* ================= DRAG END ================= */
   async function onDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
+    const { active, over } = event
+    if (!over || active.id === over.id) return
 
-    const activeMenu = menus.find(m => m.id === active.id);
-    const overMenu = menus.find(m => m.id === over.id);
-    if (!activeMenu || !overMenu) return;
-
+    const activeMenu = menus.find((m: Menu) => m.id === active.id)
+    const overMenu = menus.find((m: Menu) => m.id === over.id)
+    if (!activeMenu || !overMenu) return
 
     /* =========================
         CASE 1: MENU UTAMA
         ========================= */
     if (activeMenu.parent_id === null && overMenu.parent_id === null) {
-        const parents = menus
-        .filter(m => m.parent_id === null)
-        .sort((a, b) => a.order - b.order)
+      const parents = menus
+        .filter((m: Menu) => m.parent_id === null)
+        .sort((a: Menu, b: Menu) => a.order - b.order)
 
-        const oldIndex = parents.findIndex(m => m.id === active.id)
-        const newIndex = parents.findIndex(m => m.id === over.id)
+      const oldIndex = parents.findIndex((m: Menu) => m.id === active.id)
+      const newIndex = parents.findIndex((m: Menu) => m.id === over.id)
 
-        const reordered = arrayMove(parents, oldIndex, newIndex)
+      const reordered = arrayMove(parents, oldIndex, newIndex)
 
-        // Update state
-        const updatedMenus = menus.map(m => {
-        const idx = reordered.findIndex(r => r.id === m.id)
+      // Update state
+      const updatedMenus = menus.map((m: Menu) => {
+        const idx = reordered.findIndex((r: Menu) => r.id === m.id)
         return idx !== -1 ? { ...m, order: idx + 1 } : m
-        })
+      })
 
-        setMenus(updatedMenus)
+      setMenus(updatedMenus)
 
-        // Persist ke DB
-        for (let i = 0; i < reordered.length; i++) {
+      // Persist ke DB
+      for (let i = 0; i < reordered.length; i++) {
         await supabase
-            .from('menus')
-            .update({ order: i + 1 })
-            .eq('id', reordered[i].id)
-        }
+          .from('menus')
+          .update({ order: i + 1 })
+          .eq('id', reordered[i].id)
+      }
 
-        return
+      return
     }
 
     /* =========================
@@ -105,48 +103,48 @@ export default function Menus() {
 
     // submenu dipindah ke menu utama
     if (activeMenu.parent_id !== null && overMenu.parent_id === null) {
-        newParentId = overMenu.id
+      newParentId = overMenu.id
     }
 
     const siblings = menus.filter(
-        m => m.parent_id === newParentId && m.id !== activeMenu.id
+      (m: Menu) => m.parent_id === newParentId && m.id !== activeMenu.id
     )
 
-    const overIndex = siblings.findIndex(m => m.id === over.id)
+    const overIndex = siblings.findIndex((m: Menu) => m.id === over.id)
 
     const finalSiblings = [...siblings]
     finalSiblings.splice(
-        overIndex === -1 ? finalSiblings.length : overIndex,
-        0,
-        { ...activeMenu, parent_id: newParentId }
+      overIndex === -1 ? finalSiblings.length : overIndex,
+      0,
+      { ...activeMenu, parent_id: newParentId }
     )
 
     // Update state
-    const updatedMenus = menus.map(m => {
-        const idx = finalSiblings.findIndex(s => s.id === m.id)
-        if (m.id === activeMenu.id) {
+    const updatedMenus = menus.map((m: Menu) => {
+      const idx = finalSiblings.findIndex((s: Menu) => s.id === m.id)
+      if (m.id === activeMenu.id) {
         return { ...m, parent_id: newParentId, order: idx + 1 }
-        }
-        return idx !== -1 ? { ...m, order: idx + 1 } : m
+      }
+      return idx !== -1 ? { ...m, order: idx + 1 } : m
     })
 
     setMenus(updatedMenus)
 
     // Persist ke DB
     for (let i = 0; i < finalSiblings.length; i++) {
-        await supabase
+      await supabase
         .from('menus')
         .update({
-            parent_id: newParentId,
-            order: i + 1,
+          parent_id: newParentId,
+          order: i + 1,
         })
         .eq('id', finalSiblings[i].id)
     }
-    }
+  }
 
   /* ================= RENDER ================= */
 
-  const parents = menus.filter(m => m.parent_id === null)
+  const parents = menus.filter((m: Menu) => m.parent_id === null)
 
   return (
     <div className="space-y-6">
@@ -161,10 +159,10 @@ export default function Menus() {
           onDragEnd={onDragEnd}
         >
           <SortableContext
-            items={parents.map(p => p.id)}
+            items={parents.map((p: Menu) => p.id)}
             strategy={verticalListSortingStrategy}
           >
-            {parents.map(parent => (
+            {parents.map((parent: Menu) => (
               <div key={parent.id}>
                 <SortableItem menu={parent} />
 
@@ -172,13 +170,13 @@ export default function Menus() {
                 <div className="ml-6 mt-2 space-y-1">
                   <SortableContext
                     items={menus
-                      .filter(m => m.parent_id === parent.id)
-                      .map(m => m.id)}
+                      .filter((m: Menu) => m.parent_id === parent.id)
+                      .map((m: Menu) => m.id)}
                     strategy={verticalListSortingStrategy}
                   >
                     {menus
-                      .filter(m => m.parent_id === parent.id)
-                      .map(child => (
+                      .filter((m: Menu) => m.parent_id === parent.id)
+                      .map((child: Menu) => (
                         <SortableItem
                           key={child.id}
                           menu={child}
@@ -233,13 +231,13 @@ function SortableItem({
     >
       <div className="flex items-center gap-2">
         <span
-            {...attributes}
-            {...listeners}
-            className="cursor-grab active:cursor-grabbing select-none
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing select-none
                         text-gray-400 hover:text-gray-700 text-lg"
-            title="Drag menu"
+          title="Drag menu"
         >
-            ☰
+          ☰
         </span>
         {menu.label}
       </div>
