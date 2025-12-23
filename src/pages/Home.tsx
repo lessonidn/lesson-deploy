@@ -10,6 +10,7 @@ type MenuSource = 'manual' | 'category' | 'sub_category'
 type Category = {
   id: string
   name: string
+  is_published: boolean
 }
 
 type SubCategory = {
@@ -103,24 +104,34 @@ export default function Home() {
       { data: menus },
       { data: pages },
     ] = await Promise.all([
-      supabase.from('categories').select('id, name').order('name'),
+      supabase
+        .from('categories')
+        .select('id, name, is_published')
+        .eq('is_published', true)
+        .order('name'),
+
       supabase.from('sub_categories').select('id, name, category_id').order('name'),
+
       supabase
         .from('exam_sets')
         .select('id, title, sub_category_id, created_at')
         .eq('is_published', true)
         .eq('is_deleted', false),
+
       supabase
         .from('exam_sets')
         .select('id, title, sub_category_id, created_at')
         .eq('is_published', true)
+        .eq('is_deleted', false)
         .order('created_at', { ascending: false })
-        .limit(5),
+        .limit(10),
+
       supabase
         .from('menus')
         .select('*')
         .eq('is_active', true)
         .order('order'),
+
       supabase
         .from('pages')
         .select('id, title, slug, excerpt, created_at')
@@ -153,6 +164,7 @@ export default function Home() {
 
       if (menu.source === 'category') {
         resolved.push(menu)
+
         cats.forEach((c, i) => {
           resolved.push({
             id: `cat-${c.id}`,

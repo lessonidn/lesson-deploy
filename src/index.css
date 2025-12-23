@@ -1,3 +1,75 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ===========================
+   Tabel di editor, preview, dan quiz
+   =========================== */
+.editor-preview table,
+.prose table,
+.quiz-content table {
+  border-collapse: collapse;
+  margin: 0.5rem auto;         /* ✅ posisi tabel di tengah */
+  width: auto;
+  text-align: center;          /* ✅ isi tabel rata tengah */
+}
+
+.prose td,
+.prose th,
+.quiz-content td,
+.quiz-content th,
+.editor-preview td,
+.editor-preview th {
+  border: 1px solid #ccc;
+  padding: 4px 6px;
+  font-size: 0.875rem;
+  line-height: 1.2;
+  text-align: center;          /* ✅ isi sel rata tengah */
+  vertical-align: middle;
+}
+
+.prose th,
+.quiz-content th,
+.editor-preview th {
+  background-color: #f9f9f9;
+}
+
+/* ===========================
+   Text & gambar lebih rapat
+   =========================== */
+.prose p,
+.editor-preview p,
+.quiz-content p {
+  margin-top: 0.125rem;
+  margin-bottom: 0.125rem;
+}
+
+.prose img,
+.editor-preview img,
+.quiz-content img {
+  margin-top: 0.125rem;
+  margin-bottom: 0.125rem;
+  display: inline-block;
+  vertical-align: middle;
+  max-width: 100%;
+  height: auto;
+}
+
+/* ===========================
+   Editor TipTap image node
+   =========================== */
+.tiptap img {
+  max-width: 100%;
+  height: auto;
+  cursor: nwse-resize;
+}
+
+/* ===========================
+   Preview gambar di tabel Questions
+   =========================== */
+.prose img {
+  max-width: 120px;
+  height: auto;
+  margin-left: auto;
+  margin-right: auto;
+}

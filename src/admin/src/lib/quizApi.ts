@@ -4,18 +4,27 @@ import { supabase } from '../../../lib/supabase'
 /* =========================
    1. Categories
    ========================= */
+
+/* ================= GET ================= */
+
+/* ================= GET ================= */
 export async function getCategories() {
   return supabase
     .from('categories')
-    .select('id, name, slug')
+    .select('id, name, slug, is_published')
     .eq('is_deleted', false)
     .order('name')
 }
 
-export async function createCategory(name: string) {
-  const slug = name.toLowerCase().replace(/\s+/g, '-')
+/* ================= CREATE ================= */
+type CreateCategoryPayload = {
+  name: string
+}
 
-  // cek apakah sudah ada slug yang sama tapi soft deleted
+export async function createCategory(payload: CreateCategoryPayload) {
+  const slug = slugify(payload.name)
+
+  // cek apakah slug pernah ada tapi soft deleted
   const { data } = await supabase
     .from('categories')
     .select('id')
@@ -27,29 +36,71 @@ export async function createCategory(name: string) {
     // restore record lama
     return supabase
       .from('categories')
-      .update({ is_deleted: false, name })
+      .update({
+        name: payload.name,
+        slug,
+        is_deleted: false,
+        is_published: true,
+      })
       .eq('id', data[0].id)
   }
 
-  // kalau belum ada, insert baru
+  // insert baru
   return supabase.from('categories').insert([
-    { name, slug, is_deleted: false },
+    {
+      name: payload.name,
+      slug,
+      is_deleted: false,
+      is_published: true,
+    },
   ])
 }
 
-export async function updateCategory(id: string, name: string) {
-  return supabase.from('categories')
+/* ================= UPDATE ================= */
+type UpdateCategoryPayload = {
+  name?: string
+  is_published?: boolean
+}
+
+export async function updateCategory(
+  id: string,
+  payload: UpdateCategoryPayload
+) {
+  const updateData: Record<string, unknown> = {}
+
+  if (payload.name !== undefined) {
+    updateData.name = payload.name
+    updateData.slug = slugify(payload.name)
+  }
+
+  if (payload.is_published !== undefined) {
+    updateData.is_published = payload.is_published
+  }
+
+  return supabase
+    .from('categories')
+    .update(updateData)
+    .eq('id', id)
+}
+
+/* ================= SOFT DELETE ================= */
+export async function softDeleteCategory(id: string) {
+  return supabase
+    .from('categories')
     .update({
-      name,
-      slug: name.toLowerCase().replace(/\s+/g, '-'),
+      is_deleted: true,
+      is_published: false,
     })
     .eq('id', id)
 }
 
-export async function softDeleteCategory(id: string) {
-  return supabase.from('categories')
-    .update({ is_deleted: true })
-    .eq('id', id)
+/* ================= HELPER ================= */
+function slugify(text: string) {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w-]/g, '')
 }
 
 /* =========================
@@ -242,11 +293,12 @@ export async function deleteChoice(id: string) {
 
 // ================= PUBLISH / UNPUBLISH =================
 export async function togglePublishExamSet(
+  table: 'exam_sets' | 'categories',
   id: string,
   isPublished: boolean
 ) {
   return supabase
-    .from('exam_sets')
+    .from(table)
     .update({ is_published: isPublished })
     .eq('id', id)
 }

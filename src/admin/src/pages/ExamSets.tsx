@@ -8,6 +8,7 @@ import {
   softDeleteExamSet,
   togglePublishExamSet
 } from '../lib/quizApi'
+import { usePreventDoubleClick } from '../lib/usePreventDoubleClick'
 
 // ================= TYPES =================
 type SubCategory = {
@@ -40,6 +41,7 @@ export default function ExamSets() {
   const [editId, setEditId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [filterSubId, setFilterSubId] = useState<string>('')
+  const { canClick } = usePreventDoubleClick()
 
   async function load() {
     const { data: subsData, error: subsError } = await getSubCategories()
@@ -55,7 +57,7 @@ export default function ExamSets() {
   }
 
   async function handleToggle(id: string, isPublished: boolean) {
-    const { error } = await togglePublishExamSet(id, isPublished)
+    const { error } = await togglePublishExamSet('exam_sets', id, isPublished)
     if (error) {
       setError(error.message)
       return
@@ -65,6 +67,7 @@ export default function ExamSets() {
 
   async function save() {
     if (!title || !subId) return
+    if (!canClick()) return
 
     const payload = {
       title,
@@ -233,8 +236,12 @@ export default function ExamSets() {
                 </button>
 
                 <button
-                  onClick={() => remove(i.id)}
-                  className="px-3 py-1 bg-red-600 text-white rounded text-sm"
+                onClick={() => {
+                  if (window.confirm(`Apakah Anda yakin ingin menghapus "${i.title}"?`)) {
+                    remove(i.id)
+                  }
+                }}
+                className="px-2 py-1 bg-red-600 text-white rounded text-sm"
                 >
                   Delete
                 </button>

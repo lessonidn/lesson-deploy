@@ -1,4 +1,11 @@
 import { useEffect, useState } from 'react'
+import { useEditor, EditorContent, ReactNodeViewRenderer } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
+import { Table, TableRow, TableCell, TableHeader } from '@tiptap/extension-table'
+import 'katex/dist/katex.min.css'
+import katex from 'katex'
+import { Node } from '@tiptap/core'
+import ResizableImage from '../lib/ResizableImage'
 import {
   getExamSets,
   getQuestions,
@@ -6,6 +13,9 @@ import {
   updateQuestion,
   deleteQuestion,
 } from '../lib/quizApi'
+import { uploadImageToSupabase } from '../lib/uploadImage'
+import { deleteImageFromSupabase } from '../lib/deleteImage'
+import { usePreventDoubleClick } from '../lib/usePreventDoubleClick'
 
 type ExamSet = {
   id: string
@@ -20,6 +30,35 @@ type Question = {
   exam_set?: ExamSet
 }
 
+// ✅ Custom Image node pakai ResizableImage
+const CustomImage = Node.create({
+  name: 'customImage',
+  group: 'block',
+  inline: false,
+  draggable: true,
+  atom: true,
+
+  addAttributes() {
+    return {
+      src: { default: null },
+      width: { default: 200 },
+      height: { default: 150 },
+    }
+  },
+
+  parseHTML() {
+    return [{ tag: 'img[src]' }]
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ['img', HTMLAttributes]
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(ResizableImage)
+  },
+})
+
 export default function Questions() {
   const [sets, setSets] = useState<ExamSet[]>([])
   const [items, setItems] = useState<Question[]>([])
@@ -27,6 +66,15 @@ export default function Questions() {
   const [setId, setSetId] = useState('')   // exam yang dipilih
   const [editId, setEditId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const { canClick } = usePreventDoubleClick()
+
+  //-- untuk unicode symbols ---
+  const unicodeSymbols = [
+    "√", "∛", "∜", "∑", "π", "∞", "Δ", "Ω",
+    "α", "β", "γ", "θ", "μ", "λ", "σ", "φ", "ψ",
+    "∫", "≈", "≠", "≤", "≥", "÷", "×", "±",
+  ]
+  const [showSymbols, setShowSymbols] = useState(false)
 
   async function load() {
     const { data: setsData, error: setsError } = await getExamSets()
@@ -41,9 +89,27 @@ export default function Questions() {
   }
 
   async function save() {
-    if (!text || !setId) return
+    if (!setId) {
+      setError('⚠️ Silakan pilih lembar soal terlebih dahulu.')
+      return
+    }
+    if (!text) return
+    if (!canClick()) return  // ✅ cegah double klik
 
     if (editId) {
+      // ✅ cek gambar lama vs baru
+      const oldQuestion = items.find(q => q.id === editId)
+      if (oldQuestion) {
+        const regex = /<img[^>]+src="([^">]+)"/g
+        let match
+        while ((match = regex.exec(oldQuestion.text)) !== null) {
+          const oldUrl = match[1]
+          if (!text.includes(oldUrl)) {
+            await deleteImageFromSupabase(oldUrl)
+          }
+        }
+      }
+
       const { error } = await updateQuestion(editId, text, setId)
       if (error) setError(error.message)
       setEditId(null)
@@ -53,10 +119,26 @@ export default function Questions() {
     }
 
     setText('')
+    setError(null) // ✅ bersihkan warning
+    editor?.commands.setContent(`<p></p><p></p><p><br></p><p><br></p>`)
     load()
   }
 
   async function remove(id: string) {
+    // ✅ cari soal lama
+    const q = items.find(item => item.id === id)
+    if (q) {
+      // ✅ cek semua <img src="..."> di soal
+      const regex = /<img[^>]+src="([^">]+)"/g
+      let match
+      while ((match = regex.exec(q.text)) !== null) {
+        const oldUrl = match[1]
+        // hapus file dari Supabase Storage
+        await deleteImageFromSupabase(oldUrl)
+      }
+    }
+
+    // ✅ hapus soal dari tabel
     const { error } = await deleteQuestion(id)
     if (error) setError(error.message)
     load()
@@ -65,6 +147,7 @@ export default function Questions() {
   function cancelEdit() {
     setEditId(null)
     setText('')
+    editor?.commands.clearContent()
   }
 
   useEffect(() => {
@@ -75,13 +158,44 @@ export default function Questions() {
     ? items.filter(q => q.exam_set_id === setId)
     : items
 
+  // ✅ Render soal dengan KaTeX + border tabel
+  function renderSoal(html: string) {
+    const latexRegex = /\$\$(.*?)\$\$/gs
+    const replaced = html.replace(latexRegex, (_, expr) =>
+      katex.renderToString(expr, { throwOnError: false })
+    )
+    return (
+      <div
+        className="prose max-w-none prose-p:my-0 prose-table:my-0 prose-img:my-0 [&_td]:p-1 [&_th]:p-1 [&_td]:text-sm [&_tr]:leading-tight [&_img]:max-w-[120px] [&_img]:h-auto [&_img]:mx-auto"
+        dangerouslySetInnerHTML={{ __html: replaced }}
+      />
+    )
+  }
+
+  // ✅ Setup TipTap editor
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableHeader,
+      TableCell,
+      CustomImage, // ✅ pakai custom image
+    ],
+    content: `<p></p><p></p><p><br></p><p><br></p>`,
+    onUpdate: ({ editor }) => {
+      setText(editor.getHTML())
+    },
+  })
+  
+
   return (
     <div className="space-y-4 bg-gray-50 min-h-screen p-4 sm:p-6">
       <h2 className="text-xl font-semibold">Questions</h2>
 
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-2">
         <select
-          className="border px-3 py-2 rounded max-w-xs truncate" // ✅ batasi lebar dropdown
+          className="border px-3 py-2 rounded max-w-xs truncate"
           value={setId}
           onChange={e => setSetId(e.target.value)}
         >
@@ -92,29 +206,94 @@ export default function Questions() {
             </option>
           ))}
         </select>
+        
+        {/* ✅ Editor TipTap */}
+        <div className="editor-preview border rounded bg-white">
+          {/* Toolbar */}
+          <div className="flex flex-wrap items-center gap-2 border-b p-2 bg-gray-50">
+            <button onClick={() => editor?.chain().focus().toggleBold().run()}
+              className="px-3 py-1 rounded hover:bg-gray-200 transition text-sm font-semibold">B</button>
+            <button onClick={() => editor?.chain().focus().toggleItalic().run()}
+              className="px-3 py-1 rounded hover:bg-gray-200 transition text-sm italic">I</button>
+            <button onClick={() => editor?.chain().focus().toggleBulletList().run()}
+              className="px-3 py-1 rounded hover:bg-gray-200 transition text-sm">• List</button>
+            <button onClick={() => {
+                const rows = parseInt(prompt('Jumlah baris?') || '3', 10)
+                const cols = parseInt(prompt('Jumlah kolom?') || '3', 10)
+                editor?.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run()
+              }}
+              className="px-3 py-1 rounded hover:bg-gray-200 transition text-sm">⌗ Table</button>
+            <button onClick={() => editor?.chain().focus().insertContent('$$a^2 + b^2 = c^2$$').run()}
+              className="px-3 py-1 rounded hover:bg-gray-200 transition text-sm">∑ Rumus</button>
 
-        <input
-          className="border px-3 py-2 rounded flex-1"
-          placeholder="Soal - Soal"
-          value={text}
-          onChange={e => setText(e.target.value)}
-        />
+            {/* Insert Gambar */}
+            <label className="px-3 py-1 rounded hover:bg-gray-200 transition text-sm cursor-pointer">
+              🖼 Gambar
+              <input
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={async e => {
+                  const file = e.target.files?.[0]
+                  if (!file) return
+                  try {
+                    const url = await uploadImageToSupabase(file)
+                    editor?.chain().focus().insertContent({
+                      type: 'customImage',
+                      attrs: { src: url, width: 200, height: 150 },
+                    }).run()
+                  } catch (err) {
+                    console.error('Upload gagal:', err)
+                  }
+                }}
+              />
+            </label>
 
-        <button
-          onClick={save}
-          className="bg-indigo-600 text-white px-4 py-2 rounded"
-        >
-          {editId ? 'Update' : 'Tambah'}
-        </button>
+            {/* ✅ Tombol Unicode */}
+            <button
+              onClick={() => setShowSymbols(!showSymbols)}
+              className="px-3 py-1 rounded hover:bg-gray-200 transition text-sm"
+            >
+              🔣 Unicode
+            </button>
+          </div>
 
-        {editId && (
-          <button
-            onClick={cancelEdit}
-            className="bg-gray-400 text-white px-4 py-2 rounded"
-          >
-            Batal
+          {/* Panel simbol Unicode */}
+          {showSymbols && (
+            <div className="flex flex-wrap gap-2 p-2 bg-gray-100 border-b">
+              {unicodeSymbols.map(sym => (
+                <button
+                  key={sym}
+                  onClick={() => {
+                    editor?.chain().focus().insertContent(sym).run()
+                    setShowSymbols(false)
+                  }}
+                  className="px-2 py-1 rounded bg-white hover:bg-gray-200 text-lg"
+                >
+                  {sym}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Editor area */}
+          <EditorContent
+            editor={editor}
+            placeholder="Tulis soal di sini..."
+            className="min-h-[300px] p-3 focus:outline-none"
+          />
+        </div>
+
+        <div className="flex gap-2 mt-2">
+          <button onClick={save}
+            className="bg-indigo-600 text-white px-4 py-2 rounded">
+            {editId ? 'Update' : 'Tambah'}
           </button>
-        )}
+          {editId && (
+            <button onClick={cancelEdit}
+              className="bg-gray-400 text-white px-4 py-2 rounded">Batal</button>
+          )}
+        </div>
       </div>
 
       {error && <p className="text-red-500">{error}</p>}
@@ -141,28 +320,38 @@ export default function Questions() {
                 key={q.id}
                 className="hover:bg-yellow-300 transition-colors"
               >
-                <td className="p-2 border">{q.text}</td>
-                <td className="p-2 border text-sm text-gray-600 text-center truncate max-w-[200px]" title={q.exam_title}>
+                <td className="p-2 border">
+                  {renderSoal(q.text)}
+                </td>
+                <td
+                  className="p-2 border text-sm text-gray-600 text-center truncate max-w-[200px]"
+                  title={q.exam_title}
+                >
                   <span className="inline-block px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs">
-                  {q.exam_title || '-'}
+                    {q.exam_title || '-'}
                   </span>
                 </td>
                 <td className="p-2 border">
-                  <div className="flex gap-2 ">
+                  <div className="flex gap-2">
                     <button
                       onClick={() => {
                         setEditId(q.id)
                         setText(q.text)
                         setSetId(q.exam_set_id)
+                        editor?.commands.setContent(q.text) // ✅ isi editor dengan soal lama
                         window.scrollTo({ top: 0, behavior: 'smooth' })
                       }}
-                      className="px-2 py-1 bg-yellow-500 text-white rounded"
+                      className="px-2 py-1 bg-yellow-500 text-white rounded text-sm"
                     >
                       Edit
                     </button>
                     <button
-                      onClick={() => remove(q.id)}
-                      className="px-2 py-1 bg-red-600 text-white rounded"
+                      onClick={() => {
+                        if (window.confirm(`Apakah Anda yakin ingin menghapus Soal ini?`)) {
+                          remove(q.id)
+                        }
+                      }}
+                      className="px-2 py-1 bg-red-600 text-white rounded text-sm"
                     >
                       Delete
                     </button>

@@ -7,6 +7,7 @@ import {
   deleteChoice,
   getExamSets, // ✅ tambahkan API ambil exam_sets
 } from '../lib/quizApi'
+import { usePreventDoubleClick } from '../lib/usePreventDoubleClick'
 
 type ExamSet = {
   id: string
@@ -38,6 +39,7 @@ export default function Choices() {
   const [error, setError] = useState<string | null>(null)
   const [choices, setChoices] = useState<Choice[]>([])
   const [editId, setEditId] = useState<string | null>(null)
+  const { canClick } = usePreventDoubleClick()
 
   const unicodeSymbols = [
     "√", "∛", "∜",  "∑", "π", "∞", "Δ", "Ω", "α", "β", "γ", "θ", "μ", "λ", "σ", "φ", "ψ", "∫", "≈", "≠", "≤", "≥", 
@@ -68,6 +70,7 @@ export default function Choices() {
 
   async function save() {
     if (!questionId || !text) return
+    if (!canClick()) return
 
     if (editId) {
       const { error } = await updateChoice(editId, text, correct, explanation)
@@ -236,13 +239,17 @@ export default function Choices() {
                     setCorrect(c.is_correct)
                     setExplanation(c.explanation || '')
                   }}
-                  className="px-2 py-1 bg-yellow-500 text-white rounded"
+                  className="px-2 py-1 bg-yellow-500 text-white rounded text-sm"
                 >
                   Edit
                 </button>
                 <button
-                  onClick={() => remove(c.id)}
-                  className="px-2 py-1 bg-red-600 text-white rounded"
+                  onClick={() => {
+                    if (window.confirm(`Apakah Anda yakin ingin menghapus Jawaban ini?`)) {
+                      remove(c.id)
+                       }
+                    }}
+                  className="px-2 py-1 bg-red-600 text-white rounded text-sm"
                 >
                   Delete
                 </button>

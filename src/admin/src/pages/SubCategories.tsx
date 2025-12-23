@@ -6,6 +6,7 @@ import {
   updateSubCategory,
   softDeleteSubCategory,
 } from '../lib/quizApi'
+import { usePreventDoubleClick } from '../lib/usePreventDoubleClick'
 
 type Category = { id: string; name: string }
 
@@ -24,6 +25,7 @@ export default function SubCategories() {
   const [filterCatId, setFilterCatId] = useState('')
   const [editId, setEditId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const { canClick } = usePreventDoubleClick()
 
   async function load(categoryId?: string) {
     const { data: catsData, error: catsError } = await getCategories()
@@ -40,6 +42,7 @@ export default function SubCategories() {
 
   async function save() {
     if (!name || !catId) return
+    if (!canClick()) return
 
     if (editId) {
       const { error } = await updateSubCategory(editId, { name, category_id: catId })
@@ -159,13 +162,17 @@ export default function SubCategories() {
             <span className="flex gap-2">
               <button
                 onClick={() => startEdit(i)}
-                className="px-3 py-1 bg-yellow-500 text-white rounded"
+                className="px-3 py-1 bg-yellow-500 text-white rounded text-sm"
               >
                 Edit
               </button>
               <button
-                onClick={() => remove(i.id)}
-                className="px-3 py-1 bg-red-600 text-white rounded"
+                onClick={() => {
+                  if (window.confirm(`Apakah Anda yakin ingin menghapus "${i.name}"?`)) {
+                    remove(i.id)
+                  }
+                }}
+                className="px-2 py-1 bg-red-600 text-white rounded text-sm"
               >
                 Delete
               </button>

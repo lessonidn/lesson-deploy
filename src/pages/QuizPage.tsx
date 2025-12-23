@@ -2,6 +2,8 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { shuffle } from '../lib/shuffle'
+import katex from 'katex'
+import 'katex/dist/katex.min.css'
 
 type Choice = {
   id: string
@@ -48,6 +50,19 @@ export default function QuizPage() {
       return
     }
     submitQuiz()
+  }
+
+  function renderSoal(html: string) {
+    const latexRegex = /\$\$(.*?)\$\$/gs
+    const replaced = html.replace(latexRegex, (_, expr) =>
+      katex.renderToString(expr, { throwOnError: false })
+    )
+    return (
+      <div
+        className="quiz-content prose max-w-none"
+        dangerouslySetInnerHTML={{ __html: replaced }}
+      />
+    )
   }
 
   const submitQuiz = useCallback(async () => {
@@ -223,7 +238,9 @@ export default function QuizPage() {
           )}
 
           {/* QUESTION */}
-          <h2 className="text-xl font-semibold text-gray-800">{question.text}</h2>
+          <div className="quiz-content prose max-w-none prose-p:my-0 prose-table:my-0 [&_td]:p-1 [&_th]:p-1 [&_td]:text-sm [&_tr]:leading-tight">
+            {renderSoal(question.text)}
+          </div>
 
           {/* CHOICES */}
           <div className="space-y-3">
