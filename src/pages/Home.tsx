@@ -388,7 +388,8 @@ export default function Home() {
 
           <div>
             <h4 className="font-semibold text-white mb-2">Kontak</h4>
-            <p className="text-sm">Email: admin@lesson.id</p>
+            <p className="text-sm">Email: lesson.idn@gmail.com</p>
+            <p className="text-sm">Whatsapp: 0851 2222 9986</p>
           </div>
         </div>
 

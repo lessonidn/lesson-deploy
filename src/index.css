@@ -9,50 +9,52 @@
 .prose table,
 .quiz-content table {
   border-collapse: collapse;
-  margin: 0.5rem auto;         /* ✅ posisi tabel di tengah */
+  margin: 0.5rem auto;
   width: auto;
-  text-align: center;          /* ✅ isi tabel rata tengah */
+  text-align: center;
 }
 
+.editor-preview td,
+.editor-preview th,
 .prose td,
 .prose th,
 .quiz-content td,
-.quiz-content th,
-.editor-preview td,
-.editor-preview th {
+.quiz-content th {
   border: 1px solid #ccc;
   padding: 4px 6px;
   font-size: 0.875rem;
   line-height: 1.2;
-  text-align: center;          /* ✅ isi sel rata tengah */
+  text-align: center;
   vertical-align: middle;
 }
 
+.editor-preview th,
 .prose th,
-.quiz-content th,
-.editor-preview th {
+.quiz-content th {
   background-color: #f9f9f9;
 }
 
 /* ===========================
    Text & gambar lebih rapat
    =========================== */
-.prose p,
 .editor-preview p,
+.prose p,
 .quiz-content p {
   margin-top: 0.125rem;
   margin-bottom: 0.125rem;
 }
 
-.prose img,
 .editor-preview img,
+.prose img,
 .quiz-content img {
   margin-top: 0.125rem;
   margin-bottom: 0.125rem;
-  display: inline-block;
-  vertical-align: middle;
-  max-width: 100%;
-  height: auto;
+  display: block;
+  max-width: 240px;
+  height: auto !important;
+  width: auto !important;
+  margin-left: auto; 
+  margin-right: auto;
 }
 
 /* ===========================
@@ -64,12 +66,13 @@
   cursor: nwse-resize;
 }
 
-/* ===========================
-   Preview gambar di tabel Questions
-   =========================== */
-.prose img {
-  max-width: 120px;
-  height: auto;
-  margin-left: auto;
-  margin-right: auto;
+@media (max-width: 768px) {
+  .quiz-content img {
+    max-width: 250px;
+  }
+}
+@media (min-width: 769px) {
+  .quiz-content img {
+    max-width: 500px;
+  }
 }

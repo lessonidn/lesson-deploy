@@ -174,14 +174,14 @@ export default function Questions() {
 
   // ✅ Setup TipTap editor
   const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Table.configure({ resizable: true }),
-      TableRow,
-      TableHeader,
-      TableCell,
-      CustomImage, // ✅ pakai custom image
-    ],
+  extensions: [
+    StarterKit,
+    Table.configure({ resizable: true }),
+    TableRow,
+    TableHeader,
+    TableCell,
+    CustomImage,
+  ],
     content: `<p></p><p></p><p><br></p><p><br></p>`,
     onUpdate: ({ editor }) => {
       setText(editor.getHTML())
@@ -215,6 +215,8 @@ export default function Questions() {
               className="px-3 py-1 rounded hover:bg-gray-200 transition text-sm font-semibold">B</button>
             <button onClick={() => editor?.chain().focus().toggleItalic().run()}
               className="px-3 py-1 rounded hover:bg-gray-200 transition text-sm italic">I</button>
+            <button onClick={() => editor?.chain().focus().toggleUnderline().run()} 
+              className="px-3 py-1 rounded hover:bg-gray-200 transition text-sm underline">U</button>
             <button onClick={() => editor?.chain().focus().toggleBulletList().run()}
               className="px-3 py-1 rounded hover:bg-gray-200 transition text-sm">• List</button>
             <button onClick={() => {
@@ -284,14 +286,34 @@ export default function Questions() {
           />
         </div>
 
-        <div className="flex gap-2 mt-2">
-          <button onClick={save}
-            className="bg-indigo-600 text-white px-4 py-2 rounded">
+        {/* Info KaTeX */}
+        <p className="text-xs text-gray-500 mt-2">
+          Untuk daftar lengkap sintaks Rumus LaTeX yang didukung, lihat di{' '}
+          <a
+            href="https://katex.org/docs/supported.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 underline"
+          >
+            KaTeX Supported Functions
+          </a>.
+        </p>
+
+        <div className="flex flex-wrap gap-2 mt-2">
+          <button
+            onClick={save}
+            className="bg-indigo-600 text-white px-4 py-2 rounded"
+          >
             {editId ? 'Update' : 'Tambah'}
           </button>
+
           {editId && (
-            <button onClick={cancelEdit}
-              className="bg-gray-400 text-white px-4 py-2 rounded">Batal</button>
+            <button
+              onClick={cancelEdit}
+              className="bg-gray-400 text-white px-4 py-2 rounded"
+            >
+              Batal
+            </button>
           )}
         </div>
       </div>

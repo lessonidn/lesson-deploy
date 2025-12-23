@@ -1,4 +1,9 @@
 import { useEffect, useState } from 'react'
+import { useEditor, EditorContent } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
+import { Table, TableRow, TableCell, TableHeader } from '@tiptap/extension-table'
+import 'katex/dist/katex.min.css'
+import katex from 'katex'
 import {
   getQuestions,
   getChoices,
@@ -42,13 +47,11 @@ export default function Choices() {
   const { canClick } = usePreventDoubleClick()
 
   const unicodeSymbols = [
-    "√", "∛", "∜",  "∑", "π", "∞", "Δ", "Ω", "α", "β", "γ", "θ", "μ", "λ", "σ", "φ", "ψ", "∫", "≈", "≠", "≤", "≥", 
+    "√", "∛", "∜", "∑", "π", "∞", "Δ", "Ω",
+    "α", "β", "γ", "θ", "μ", "λ", "σ", "φ", "ψ",
+    "∫", "≈", "≠", "≤", "≥", "÷", "×", "±",
   ]
   const [showSymbols, setShowSymbols] = useState(false)
-
-  function insertSymbol(sym: string) {
-    setExplanation(prev => prev + sym)
-  }
 
   useEffect(() => {
     async function loadData() {
@@ -85,6 +88,7 @@ export default function Choices() {
     setCorrect(false)
     setExplanation('')
     loadChoices(questionId)
+    explanationEditor?.commands.setContent(`<p></p><p></p><p><br></p><p><br></p>`)
   }
 
   async function remove(id: string) {
@@ -98,7 +102,50 @@ export default function Choices() {
     setText('')
     setCorrect(false)
     setExplanation('')
+    explanationEditor?.commands.setContent(`<p></p><p></p><p><br></p><p><br></p>`) // ✅ reset editor visual
   }
+
+  //--- UNTUK ISI RUMUS ---
+  function renderSoal(html: string) {
+  const latexRegex = /\$\$(.*?)\$\$/gs
+  const replaced = html.replace(latexRegex, (_, expr) =>
+    katex.renderToString(expr, { throwOnError: false })
+  )
+  return (
+    <div
+      className="prose max-w-none prose-p:my-0 prose-table:my-0 prose-img:my-0.5 [&_td]:p-1 [&_th]:p-1 [&_td]:text-sm [&_tr]:leading-tight [&_img]:max-w-[120px] [&_img]:h-auto [&_img]:mx-auto"
+      dangerouslySetInnerHTML={{ __html: replaced }}
+    />
+  )
+}
+
+function renderExplanation(html: string) {
+  const latexRegex = /\$\$(.*?)\$\$/gs
+  const replaced = html.replace(latexRegex, (_, expr) =>
+    katex.renderToString(expr, { throwOnError: false })
+  )
+  return (
+    <div
+      className="prose max-w-none prose-p:my-0 prose-table:my-0 prose-img:my-0.5 [&_td]:p-1 [&_th]:p-1 [&_td]:text-sm [&_tr]:leading-tight [&_img]:max-w-[120px] [&_img]:h-auto [&_img]:mx-auto"
+      dangerouslySetInnerHTML={{ __html: replaced }}
+    />
+  )
+}
+
+  // --- textarea penjelasan ---
+  const explanationEditor = useEditor({
+    extensions: [
+      StarterKit,
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableHeader,
+      TableCell,
+    ],
+    content: `<p></p><p></p><p><br></p><p><br></p>`, // default tinggi editor
+    onUpdate: ({ editor }) => {
+      setExplanation(editor.getHTML())
+    },
+  })
 
   return (
     <div className="space-y-4">
@@ -136,8 +183,8 @@ export default function Choices() {
           {questions
             .filter(q => !examId || q.exam_set_id === examId)
             .map(q => (
-              <option key={q.id} value={q.id}>
-                {q.text}
+              <option key={q.id} value={q.id} title={q.text}>
+                {q.text.length > 50 ? q.text.slice(0, 50) + '...' : q.text}
               </option>
             ))}
         </select>
@@ -159,104 +206,147 @@ export default function Choices() {
         </label>
       </div>
 
-      {/* Tombol untuk membuka daftar simbol */}
-      <button
-        type="button"
-        onClick={() => setShowSymbols(prev => !prev)}
-        className="px-3 py-1 border rounded bg-blue-200 hover:bg-orange-300"
-      >
-        Insert Unicode
-      </button>
-
-      {/* Panel daftar simbol */}
-      {showSymbols && (
-        <div className="flex flex-wrap gap-2 mt-2">
-          {unicodeSymbols.map(sym => (
-            <button
-              key={sym}
-              type="button"
-              onClick={() => insertSymbol(sym)}
-              className="px-2 py-1 border rounded bg-white hover:bg-gray-100"
-            >
-              {sym}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Textarea penjelasan */}
-      <textarea
-        className="border px-3 py-2 rounded w-full md:col-span-2"
-        placeholder="Penjelasan Jawaban (opsional)"
-        value={explanation}
-        onChange={e => setExplanation(e.target.value)}
-        rows={3}
-      />
-
-      <div className="flex flex-wrap gap-2">
-        <button
-          onClick={save}
-          className="bg-indigo-600 text-white px-4 py-2 rounded"
-        >
-          {editId ? 'Update' : 'Tambah'}
-        </button>
-
-        {editId && (
+      {/* Editor penjelasan jawaban */}
+      <div className="editor-preview border rounded bg-white mt-2">
+        {/* Toolbar */}
+        <div className="flex flex-wrap items-center gap-2 border-b p-2 bg-gray-50">
+          <button onClick={() => explanationEditor?.chain().focus().toggleBold().run()}
+            className="px-3 py-1 rounded hover:bg-gray-200 transition text-sm font-semibold">B</button>
+          <button onClick={() => explanationEditor?.chain().focus().toggleItalic().run()}
+            className="px-3 py-1 rounded hover:bg-gray-200 transition text-sm italic">I</button>
+          <button onClick={() => explanationEditor?.chain().focus().toggleUnderline().run()}
+            className="px-3 py-1 rounded hover:bg-gray-200 transition text-sm underline">U</button>
+          <button onClick={() => explanationEditor?.chain().focus().toggleBulletList().run()}
+            className="px-3 py-1 rounded hover:bg-gray-200 transition text-sm">• List</button>
+          <button onClick={() => {
+              const rows = parseInt(prompt('Jumlah baris?') || '3', 10)
+              const cols = parseInt(prompt('Jumlah kolom?') || '3', 10)
+              explanationEditor?.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run()
+            }}
+            className="px-3 py-1 rounded hover:bg-gray-200 transition text-sm">⌗ Table</button>
+          <button onClick={() => explanationEditor?.chain().focus().insertContent('$$a^2 + b^2 = c^2$$').run()}
+            className="px-3 py-1 rounded hover:bg-gray-200 transition text-sm">∑ Rumus</button>
           <button
-            onClick={cancelEdit}
-            className="bg-gray-400 text-white px-4 py-2 rounded"
+            onClick={() => setShowSymbols(!showSymbols)}
+            className="px-3 py-1 rounded hover:bg-gray-200 transition text-sm"
           >
-            Batal
+            🔣 Unicode
           </button>
+        </div>
+
+        {/* Panel simbol Unicode */}
+        {showSymbols && (
+          <div className="flex flex-wrap gap-2 p-2 bg-gray-100 border-b">
+            {unicodeSymbols.map(sym => (
+              <button
+                key={sym}
+                onClick={() => {
+                  explanationEditor?.chain().focus().insertContent(sym).run()
+                  setShowSymbols(false)
+                }}
+                className="px-2 py-1 rounded bg-white hover:bg-gray-200 text-lg"
+              >
+                {sym}
+              </button>
+            ))}
+          </div>
         )}
+
+        {/* Editor area */}
+        <EditorContent
+          editor={explanationEditor}
+          placeholder="Penjelasan Jawaban (opsional)"
+          className="min-h-[150px] p-3 focus:outline-none"
+        />
       </div>
+
+      {/* Info KaTeX */}
+      <p className="text-xs text-gray-500 mt-2">
+         Untuk daftar lengkap sintaks Rumus LaTeX yang didukung, lihat di{' '}
+         <a
+            href="https://katex.org/docs/supported.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 underline"
+          >
+            KaTeX Supported Functions
+          </a>.
+        </p>
+
+        <div className="flex flex-wrap gap-2 mt-2">
+          <button
+            onClick={save}
+            className="bg-indigo-600 text-white px-4 py-2 rounded"
+          >
+            {editId ? 'Update' : 'Tambah'}
+          </button>
+
+          {editId && (
+            <button
+              onClick={cancelEdit}
+              className="bg-gray-400 text-white px-4 py-2 rounded"
+            >
+              Batal
+            </button>
+          )}
+        </div>
 
       {error && <p className="text-red-500">{error}</p>}
 
       {questionId && (
-        <ul className="bg-white border rounded divide-y">
-          {choices.map(c => (
-            <li key={c.id} className="p-3 flex justify-between items-start">
-              <div>
-                <span>
-                  {c.text}{' '}
-                  {c.is_correct && (
-                    <span className="text-green-600 font-semibold">✔</span>
-                  )}
-                </span>
-                {c.explanation && (
-                  <div className="text-gray-500 text-sm mt-1">
-                    {c.explanation}
-                  </div>
-                )}
-              </div>
+        <>
+          {/* ✅ Preview soal yang dipilih */}
+          <div className="border rounded bg-white p-3 mt-2">
+            <h4 className="text-sm font-semibold mb-2">Preview Soal</h4>
+            {renderSoal(questions.find(q => q.id === questionId)?.text || '')}
+          </div>
 
-              <span className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setEditId(c.id)
-                    setText(c.text)
-                    setCorrect(c.is_correct)
-                    setExplanation(c.explanation || '')
-                  }}
-                  className="px-2 py-1 bg-yellow-500 text-white rounded text-sm"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => {
-                    if (window.confirm(`Apakah Anda yakin ingin menghapus Jawaban ini?`)) {
-                      remove(c.id)
-                       }
+          {/* ✅ Daftar pilihan jawaban */}
+          <ul className="bg-white border rounded divide-y">
+            {choices.map(c => (
+              <li key={c.id} className="p-3 flex justify-between items-start">
+                <div className="max-w-[80%]">
+                  <div className="text-base">
+                    {c.text}{' '}
+                    {c.is_correct && (
+                      <span className="text-green-600 font-semibold">✔</span>
+                    )}
+                  </div>
+                  {c.explanation && (
+                    <div className="text-gray-500 text-sm mt-2">
+                      {renderExplanation(c.explanation)}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setEditId(c.id)
+                      setText(c.text)
+                      setCorrect(c.is_correct)
+                      setExplanation(c.explanation || '')
+                      explanationEditor?.commands.setContent(c.explanation || `<p></p><p></p><p><br></p><p><br></p>`)
                     }}
-                  className="px-2 py-1 bg-red-600 text-white rounded text-sm"
-                >
-                  Delete
-                </button>
-              </span>
-            </li>
-          ))}
-        </ul>
+                    className="px-2 py-1 bg-yellow-500 text-white rounded text-sm"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`Apakah Anda yakin ingin menghapus Jawaban ini?`)) {
+                        remove(c.id)
+                      }
+                    }}
+                    className="px-2 py-1 bg-red-600 text-white rounded text-sm"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </div>
   )
