@@ -125,7 +125,7 @@ export default function Home() {
         .from('menus')
         .select('*')
         .eq('is_active', true)
-        .order('order'),
+        .order('order_index'),
 
       supabase
         .from('pages')
