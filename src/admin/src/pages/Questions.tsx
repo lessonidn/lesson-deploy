@@ -67,6 +67,7 @@ export default function Questions() {
   const [editId, setEditId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const { canClick } = usePreventDoubleClick()
+  const [search, setSearch] = useState('')
 
   //-- untuk unicode symbols ---
   const unicodeSymbols = [
@@ -84,7 +85,7 @@ export default function Questions() {
       setError(setsError?.message || questionsError?.message || 'Gagal memuat data')
     } else {
       setSets(setsData || [])
-      setItems(questionsData || [])
+      setItems((questionsData || []).sort((a, b) => b.id.localeCompare(a.id)))
     }
   }
 
@@ -154,9 +155,9 @@ export default function Questions() {
     load()
   }, [])
 
-  const filteredItems = setId
-    ? items.filter(q => q.exam_set_id === setId)
-    : items
+  const filteredItems = items
+    .filter(q => (setId ? q.exam_set_id === setId : true))
+    .filter(q => q.text.toLowerCase().includes(search.toLowerCase()))
 
   // ✅ Render soal dengan KaTeX + border tabel
   function renderSoal(html: string) {
@@ -320,11 +321,31 @@ export default function Questions() {
 
       {error && <p className="text-red-500">{error}</p>}
 
-      {/* ✅ Info jumlah soal */}
-      <div className="text-sm text-gray-600">
-        {setId
-          ? `Jumlah soal di lembar "${sets.find(s => s.id === setId)?.title || '-'}": ${filteredItems.length}`
-          : `Total semua soal: ${filteredItems.length}`}
+      {/* ✅ Info jumlah soal + Search */}
+      <div className="flex justify-between items-center text-sm text-gray-600">
+        <span>
+          {setId
+            ? `Jumlah soal di lembar "${sets.find(s => s.id === setId)?.title || '-'}": ${filteredItems.length}`
+            : `Total semua soal: ${filteredItems.length}`}
+        </span>
+
+        <div className="relative w-1/3">
+          <input
+            type="text"
+            placeholder="Cari soal..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="border px-3 py-1 rounded w-full text-sm pr-8"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 text-sm"
+            >
+              ✕
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded shadow bg-white">
