@@ -50,14 +50,6 @@ type Menu = {
 
 /* ================= HELPERS ================= */
 
-function slugify(text: string) {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/[^\w-]/g, '')
-}
-
 function buildMenuTree(menus: Menu[]) {
   const map = new Map<string, Menu>()
   const roots: Menu[] = []
@@ -106,11 +98,14 @@ export default function Home() {
     ] = await Promise.all([
       supabase
         .from('categories')
-        .select('id, name, is_published')
+        .select('id, name, slug, is_published')   // ✅ tambahkan slug
         .eq('is_published', true)
-        .order('name'),
+        .order('order_index'),
 
-      supabase.from('sub_categories').select('id, name, category_id').order('name'),
+      supabase
+        .from('sub_categories')
+        .select('id, name, slug, category_id')    // ✅ tambahkan slug
+        .order('name'),
 
       supabase
         .from('exam_sets')
@@ -163,13 +158,12 @@ export default function Home() {
       }
 
       if (menu.source === 'category') {
-        resolved.push(menu)
-
+        resolved.push({ ...menu, url: null })
         cats.forEach((c, i) => {
           resolved.push({
             id: `cat-${c.id}`,
             label: c.name,
-            url: `/latihan/${slugify(c.name)}`,
+            url: `/category/${c.slug}`,   // ✅ pakai slug dari DB
             position: menu.position,
             parent_id: menu.id,
             order: i + 1,
@@ -187,7 +181,7 @@ export default function Home() {
           resolved.push({
             id: `sub-${s.id}`,
             label: s.name,
-            url: `/latihan/${slugify(s.name)}`,
+            url: `/category/${s.slug}`,   // ✅ pakai slug dari DB
             position: menu.position,
             parent_id: menu.id,
             order: i + 1,
@@ -223,8 +217,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* ================= HEADER ================= */}
-      <header className="bg-blue-600 text-white">
+      <header className="relative bg-blue-600 text-white z-40">
         <div className="max-w-6xl mx-auto px-4 py-5 flex justify-between items-center">
           <div className="relative">
             <img src={logo} alt="lesson" className="absolute -top-5 right-7 h-6" />
@@ -238,19 +231,34 @@ export default function Home() {
             <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
               {headerMenus.map(menu => (
                 <div key={menu.id} className="relative group">
-                  <Link to={menu.url || '#'} className="flex items-center gap-1 hover:text-sky-300">
-                    {menu.label}
-                    {menu.children?.length ? <span className="text-xs">▼</span> : null}
-                  </Link>
+                  {/* Parent menu: pakai button kalau hanya pemicu dropdown */}
+                  {menu.children?.length ? (
+                    <button
+                      type="button"
+                      className="flex items-center gap-1 hover:text-sky-300"
+                    >
+                      {menu.label}
+                      <span className="text-xs">▼</span>
+                    </button>
+                  ) : (
+                    <Link
+                      to={menu.url || '#'}
+                      className="flex items-center gap-1 hover:text-sky-300"
+                    >
+                      {menu.label}
+                    </Link>
+                  )}
 
                   {menu.children?.length ? (
-                    <div className="absolute left-0 top-full mt-2 w-52 bg-white text-gray-800 rounded-xl shadow-lg
-                                    opacity-0 invisible group-hover:opacity-100 group-hover:visible transition">
+                    <div
+                      className="absolute left-0 top-full mt-0 bg-white text-gray-800 rounded-xl shadow-lg
+                                hidden group-hover:block hover:block z-50 w-auto min-w-max"
+                    >
                       {menu.children.map(child => (
                         <Link
                           key={child.id}
                           to={child.url || '#'}
-                          className="block px-4 py-2 hover:bg-blue-50 text-sm"
+                          className="block px-4 py-2 hover:bg-blue-50 text-sm whitespace-nowrap"
                         >
                           {child.label}
                         </Link>

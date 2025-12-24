@@ -198,7 +198,14 @@ export default function Questions() {
         <select
           className="border px-3 py-2 rounded max-w-xs truncate"
           value={setId}
-          onChange={e => setSetId(e.target.value)}
+          onChange={e => {
+            setSetId(e.target.value)
+
+            // ✅ reset mode edit kalau pindah lembar soal
+            setEditId(null)
+            setText('')
+            editor?.commands.setContent(`<p></p><p></p><p><br></p><p><br></p>`)
+          }}
         >
           <option value="">Pilih Lembar Soal</option>
           {sets.map(s => (

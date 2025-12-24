@@ -22,7 +22,7 @@ type Menu = {
   id: string
   label: string
   parent_id: string | null
-  order: number
+  order_index: number   // ✅ gunakan order_index, bukan order
   source: MenuSource
 }
 
@@ -43,10 +43,10 @@ export default function Menus() {
   async function loadMenus() {
     const { data } = await supabase
       .from('menus')
-      .select('id, label, parent_id, order, source')
+      .select('id, label, parent_id, order_index, source')
       .or('source.eq.manual,source.is.null')
       .order('parent_id', { nullsFirst: true })
-      .order('order')
+      .order('order_index')
 
     setMenus(data || [])
   }
@@ -66,7 +66,7 @@ export default function Menus() {
     if (activeMenu.parent_id === null && overMenu.parent_id === null) {
       const parents = menus
         .filter((m: Menu) => m.parent_id === null)
-        .sort((a: Menu, b: Menu) => a.order - b.order)
+        .sort((a: Menu, b: Menu) => a.order_index - b.order_index)
 
       const oldIndex = parents.findIndex((m: Menu) => m.id === active.id)
       const newIndex = parents.findIndex((m: Menu) => m.id === over.id)
@@ -76,7 +76,7 @@ export default function Menus() {
       // Update state
       const updatedMenus = menus.map((m: Menu) => {
         const idx = reordered.findIndex((r: Menu) => r.id === m.id)
-        return idx !== -1 ? { ...m, order: idx + 1 } : m
+        return idx !== -1 ? { ...m, order_index: idx + 1 } : m
       })
 
       setMenus(updatedMenus)
@@ -85,7 +85,7 @@ export default function Menus() {
       for (let i = 0; i < reordered.length; i++) {
         await supabase
           .from('menus')
-          .update({ order: i + 1 })
+          .update({ order_index: i + 1 })
           .eq('id', reordered[i].id)
       }
 
@@ -123,7 +123,7 @@ export default function Menus() {
     const updatedMenus = menus.map((m: Menu) => {
       const idx = finalSiblings.findIndex((s: Menu) => s.id === m.id)
       if (m.id === activeMenu.id) {
-        return { ...m, parent_id: newParentId, order: idx + 1 }
+        return { ...m, parent_id: newParentId, order_index: idx + 1 }
       }
       return idx !== -1 ? { ...m, order: idx + 1 } : m
     })
@@ -136,7 +136,7 @@ export default function Menus() {
         .from('menus')
         .update({
           parent_id: newParentId,
-          order: i + 1,
+          order_index: i + 1,
         })
         .eq('id', finalSiblings[i].id)
     }
@@ -242,7 +242,7 @@ function SortableItem({
         {menu.label}
       </div>
 
-      <span className="text-xs text-gray-400">order: {menu.order}</span>
+      <span className="text-xs text-gray-400">order: {menu.order_index}</span>
     </div>
   )
 }

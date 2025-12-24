@@ -97,7 +97,14 @@ export default function SubCategories() {
         <select
           className="border px-3 py-2 rounded"
           value={catId}
-          onChange={e => setCatId(e.target.value)}
+          onChange={e => {
+            setCatId(e.target.value)
+
+            // ✅ reset form kalau pindah MAPEL
+            setEditId(null)
+            setName('')
+            setError(null)
+          }}
         >
           <option value="">Pilih MAPEL</option>
           {cats.map(c => (
@@ -136,7 +143,15 @@ export default function SubCategories() {
         <select
           className="border px-3 py-2 rounded"
           value={filterCatId}
-          onChange={e => setFilterCatId(e.target.value)}
+          onChange={e => {
+            setFilterCatId(e.target.value)
+
+            // ✅ reset form kalau ganti filter MAPEL
+            setEditId(null)
+            setName('')
+            setCatId('')
+            setError(null)
+          }}
         >
           <option value="">Filter Semua MAPEL</option>
           {cats.map(c => (

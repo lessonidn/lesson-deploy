@@ -77,6 +77,36 @@ export default function BlogDetail() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
+      {/* ===== SEO BREADCRUMMB ===== */}
+      <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Home",
+              "item": window.location.origin + "/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "Artikel",
+              "item": window.location.origin + "/blog"
+            },
+            {
+              "@type": "ListItem",
+              "position": 3,
+              "name": page.title,
+              "item": window.location.href
+            }
+          ]
+        })
+      }}
+    />
       <h1 className="text-3xl font-bold mb-4">{page.title}</h1>
 
       {page.featured_image && (

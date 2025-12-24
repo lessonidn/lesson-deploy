@@ -4,9 +4,6 @@ import { supabase } from '../../../lib/supabase'
 /* =========================
    1. Categories
    ========================= */
-
-/* ================= GET ================= */
-
 /* ================= GET ================= */
 export async function getCategories() {
   return supabase
@@ -301,4 +298,18 @@ export async function togglePublishExamSet(
     .from(table)
     .update({ is_published: isPublished })
     .eq('id', id)
+}
+
+// ================= DRAG & DROP CATEGORIES =================
+export async function reorderCategories(
+  updates: { id: string; order_index: number }[]
+) {
+  const promises = updates.map(u =>
+    supabase
+      .from('categories')
+      .update({ order_index: u.order_index })
+      .eq('id', u.id)
+  )
+
+  return Promise.all(promises)
 }

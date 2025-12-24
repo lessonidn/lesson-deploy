@@ -1,6 +1,8 @@
 import { useParams, Link } from 'react-router-dom'
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import 'katex/dist/katex.min.css'
+import katex from 'katex'
 
 type Attempt = {
   id: string
@@ -116,6 +118,21 @@ export default function ResultPage() {
     )
   }
 
+  function renderSoal(html: string) {
+    const latexRegex = /\$\$(.*?)\$\$/gs
+    const replaced = html.replace(latexRegex, (_, expr) =>
+      katex.renderToString(expr, { throwOnError: false })
+    )
+    return (
+      <div
+        className="prose max-w-none prose-p:my-0 prose-table:my-0 prose-img:my-0
+                  [&_td]:p-1 [&_th]:p-1 [&_td]:text-sm [&_tr]:leading-tight
+                  [&_img]:max-w-[120px] [&_img]:h-auto [&_img]:mx-auto"
+        dangerouslySetInnerHTML={{ __html: replaced }}
+      />
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* HEADER */}
@@ -140,8 +157,9 @@ export default function ResultPage() {
             className="rounded-xl border bg-white p-6 shadow-sm"
           >
             <h3 className="font-semibold mb-3">
-              {idx + 1}. {q.text}
+              {idx + 1}.
             </h3>
+            {renderSoal(q.text)}
 
             <div className="space-y-2">
               {q.choices.map(c => {
@@ -170,7 +188,8 @@ export default function ResultPage() {
                     {/* Tambahan: tampilkan penjelasan jawaban benar */}
                     {c.is_correct && c.explanation && (
                       <div className="mt-2 text-gray-600 text-sm">
-                        Penjelasan: {c.explanation}
+                        Penjelasan:
+                        {c.explanation && renderSoal(c.explanation)}
                       </div>
                     )}
                   </div>

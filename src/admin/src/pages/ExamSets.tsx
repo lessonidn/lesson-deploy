@@ -120,7 +120,15 @@ export default function ExamSets() {
         <select
           className="border px-3 py-2 rounded"
           value={subId}
-          onChange={e => setSubId(e.target.value)}
+          onChange={e => {
+            setSubId(e.target.value)
+
+            // ✅ reset form kalau pindah sub kategori
+            setEditId(null)
+            setTitle('')
+            setDurationMinutes(30)
+            setError(null)
+          }}
         >
           <option value="">Pilih Sub Kategori</option>
           {subs.map(s => (
@@ -176,7 +184,16 @@ export default function ExamSets() {
         <select
           className="border px-3 py-2 rounded"
           value={filterSubId}
-          onChange={e => setFilterSubId(e.target.value)}
+          onChange={e => {
+            setFilterSubId(e.target.value)
+
+            // ✅ reset form kalau ganti filter
+            setEditId(null)
+            setTitle('')
+            setSubId('')
+            setDurationMinutes(30)
+            setError(null)
+          }}
         >
           <option value="">Filter: Semua Sub Kategori</option>
           {subs.map(s => (

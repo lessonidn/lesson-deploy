@@ -176,6 +176,14 @@ function renderExplanation(html: string) {
           value={questionId}
           onChange={e => {
             setQuestionId(e.target.value)
+
+            // ✅ reset mode edit kalau pindah soal
+            setEditId(null)
+            setText('')
+            setCorrect(false)
+            setExplanation('')
+            explanationEditor?.commands.setContent(`<p></p><p></p><p><br></p><p><br></p>`)
+
             if (e.target.value) loadChoices(e.target.value)
           }}
         >
@@ -327,6 +335,7 @@ function renderExplanation(html: string) {
                       setCorrect(c.is_correct)
                       setExplanation(c.explanation || '')
                       explanationEditor?.commands.setContent(c.explanation || `<p></p><p></p><p><br></p><p><br></p>`)
+                      window.scrollTo({ top: 0, behavior: 'smooth' }) // ✅ scroll ke atas otomatis
                     }}
                     className="px-2 py-1 bg-yellow-500 text-white rounded text-sm"
                   >
