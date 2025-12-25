@@ -16,5 +16,5 @@ export const userRoutes: RouteObject[] = [
   { path: '/result/:attemptId', element: <ResultPage /> },
   { path: '/blog/:slug', element: <BlogDetail /> },
   { path: '/blog', element: <BlogArchive /> }, // ✅ ARCHIVE
-  { path: '/category/:slug', element: <CategoryLandingPage /> },
+  { path: '/latihan/:slug', element: <CategoryLandingPage /> },
 ]

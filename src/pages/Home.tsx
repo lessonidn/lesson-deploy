@@ -163,7 +163,7 @@ export default function Home() {
           resolved.push({
             id: `cat-${c.id}`,
             label: c.name,
-            url: `/category/${c.slug}`,   // ✅ pakai slug dari DB
+            url: `/latihan/${c.slug}`,   // ✅ pakai slug dari DB
             position: menu.position,
             parent_id: menu.id,
             order: i + 1,
@@ -181,7 +181,7 @@ export default function Home() {
           resolved.push({
             id: `sub-${s.id}`,
             label: s.name,
-            url: `/category/${s.slug}`,   // ✅ pakai slug dari DB
+            url: `/latihan/${s.slug}`,   // ✅ pakai slug dari DB
             position: menu.position,
             parent_id: menu.id,
             order: i + 1,
