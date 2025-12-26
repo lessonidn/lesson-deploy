@@ -10,7 +10,15 @@ export default defineConfig({
         main: 'index.html',
         admin: 'admin.html',
       },
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          katex: ['katex'],
+        },
+      },
     },
+    // opsional: naikkan limit warning biar log lebih bersih
+    chunkSizeWarningLimit: 1500, // naikkan limit ke 1.5 MB
   },
   server: {
     port: 5173,
