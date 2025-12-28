@@ -1,12 +1,25 @@
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+
+type Category = {
+  id: string
+  name: string
+  slug: string
+}
+
+type SubCategory = {
+  id: string
+  name: string
+  categories: Category[]
+}
 
 type ExamSet = {
   id: string
   title: string
   description: string
   duration_minutes: number
+  sub_categories: SubCategory[]
 }
 
 export default function ExamPage() {
@@ -15,6 +28,7 @@ export default function ExamPage() {
   const [questionCount, setQuestionCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (!id) return
@@ -27,7 +41,21 @@ export default function ExamPage() {
 
     const { data: examData, error: examErr } = await supabase
       .from('exam_sets')
-      .select('id, title, description, duration_minutes')
+      .select(`
+        id,
+        title,
+        description,
+        duration_minutes,
+        sub_categories (
+          id,
+          name,
+          categories (
+            id,
+            name,
+            slug
+          )
+        )
+      `)
       .eq('id', examId)
       .eq('is_published', true)
       .single()
@@ -37,7 +65,7 @@ export default function ExamPage() {
       .select('*', { count: 'exact', head: true })
       .eq('exam_set_id', examId)
 
-    if (examErr || countErr) {
+    if (examErr || countErr || !examData) {
       setError(examErr?.message || countErr?.message || 'Gagal memuat exam')
     } else {
       setExam(examData)
@@ -59,10 +87,31 @@ export default function ExamPage() {
     )
   }
 
+  // Ambil kategori pertama, fallback ke null
+  const category = exam.sub_categories[0]?.categories[0]
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-pink-50">
       <div className="max-w-3xl mx-auto px-4 py-16">
         <div className="bg-white rounded-2xl shadow-lg p-8 space-y-6">
+
+          {/* ✅ BACK TO CATEGORY dengan fallback */}
+          {category ? (
+            <Link
+              to={`/category/${category.slug}`}
+              className="text-sm text-blue-600 hover:underline inline-block"
+            >
+              ← Kembali ke latihan {category.name}
+            </Link>
+          ) : (
+            <Link
+              to="/category"
+              className="text-sm text-blue-600 hover:underline inline-block"
+            >
+              ← Kembali ke daftar kategori
+            </Link>
+          )}
+
           <h1 className="text-3xl font-bold text-indigo-600">
             {exam.title}
           </h1>
@@ -83,12 +132,12 @@ export default function ExamPage() {
           </div>
 
           <div className="pt-6 flex gap-4">
-            <Link
-              to="/"
+            <button
+              onClick={() => navigate(-1)}
               className="px-5 py-3 rounded-lg border text-gray-600 hover:bg-gray-100"
             >
               ← Kembali
-            </Link>
+            </button>
 
             <Link
               to={`/quiz/${exam.id}`}

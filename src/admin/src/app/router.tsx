@@ -15,6 +15,7 @@ import Menus from '../pages/menu-manager/Menus'
 import Pages from '../pages/menu-manager/Pages'
 import Widgets from '../pages/menu-manager/Widgets'
 import Banners from '../pages/menu-manager/Banners'
+import SocialMedia from '../pages/menu-manager/SocialMedia'
 
 export const adminRoutes: RouteObject[] = [
   // 🔓 LOGIN (PUBLIC)
@@ -44,6 +45,7 @@ export const adminRoutes: RouteObject[] = [
               { path: 'pages', element: <Pages /> },
               { path: 'widgets', element: <Widgets /> },
               { path: 'banners', element: <Banners /> },
+              { path: 'social-media', element: <SocialMedia /> },
             ],
           },
         ],

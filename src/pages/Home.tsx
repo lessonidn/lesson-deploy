@@ -2,6 +2,14 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import logo from '../asset/leaf.png'
+import {
+  Facebook,
+  Instagram,
+  Youtube,
+  Music,
+  LucideIcon
+} from 'lucide-react'
+
 
 /* ================= TYPES ================= */
 
@@ -48,6 +56,23 @@ type Menu = {
   children?: Menu[]
 }
 
+type SocialLink = {
+  id: string
+  platform: string
+  url: string
+  icon: string
+  is_active: boolean
+  order_index: number
+}
+
+const SOCIAL_ICONS: Record<string, LucideIcon> = {
+  facebook: Facebook,
+  instagram: Instagram,
+  youtube: Youtube,
+  tiktok: Music,
+}
+
+
 /* ================= HELPERS ================= */
 
 function buildMenuTree(menus: Menu[]) {
@@ -80,6 +105,7 @@ export default function Home() {
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [socialLinks, setSocialLinks] = useState<SocialLink[]>([])
 
   useEffect(() => {
     loadAll()
@@ -95,6 +121,7 @@ export default function Home() {
       { data: latest },
       { data: menus },
       { data: pages },
+      { data: socialLinks },
     ] = await Promise.all([
       supabase
         .from('categories')
@@ -133,6 +160,12 @@ export default function Home() {
         .eq('status', 'published')
         .order('created_at', { ascending: false })
         .limit(3),
+
+      supabase
+        .from('social_links')
+        .select('*')
+        .eq('is_active', true)
+        .order('order_index'),
     ])
 
     if (!cats || !subs || !exams || !menus) {
@@ -146,6 +179,7 @@ export default function Home() {
     setExamSets(exams)
     setLatestExams(latest || [])
     setLatestPages(pages || [])
+    setSocialLinks(socialLinks || [])
 
     /* ===== RESOLVE AUTO MENU ===== */
 
@@ -374,6 +408,7 @@ export default function Home() {
       {/* ================= FOOTER ================= */}
       <footer className="bg-gray-900 text-gray-300">
         <div className="max-w-6xl mx-auto px-4 py-10 grid md:grid-cols-3 gap-8">
+          {/* BRAND */}
           <div>
             <h3 className="font-bold text-white mb-2">LESSON</h3>
             <p className="text-sm">
@@ -381,6 +416,7 @@ export default function Home() {
             </p>
           </div>
 
+          {/* MENU */}
           <div>
             <h4 className="font-semibold text-white mb-2">Menu</h4>
             <ul className="space-y-2 text-sm">
@@ -394,10 +430,37 @@ export default function Home() {
             </ul>
           </div>
 
+          {/* KONTAK */}
           <div>
             <h4 className="font-semibold text-white mb-2">Kontak</h4>
             <p className="text-sm">Email: lesson.idn@gmail.com</p>
             <p className="text-sm">Whatsapp: 0851 2222 9986</p>
+
+            {/* Tambahkan margin agar tidak mepet */}
+            <h4 className="font-semibold text-white mt-6 mb-2">Sosial Media</h4>
+
+            {/* SOCIAL ICONS */}
+            {socialLinks.length > 0 && (
+              <div className="flex gap-3 mt-2">
+                {socialLinks.map(s => {
+                  const Icon = SOCIAL_ICONS[s.icon]
+                  if (!Icon) return null
+
+                  return (
+                    <a
+                      key={s.id}
+                      href={s.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 rounded-full bg-gray-800 hover:bg-blue-600 transition"
+                      aria-label={s.platform}
+                    >
+                      <Icon size={16} />
+                    </a>
+                  )
+                })}
+              </div>
+            )}
           </div>
         </div>
 

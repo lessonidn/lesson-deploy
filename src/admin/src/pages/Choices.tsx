@@ -49,7 +49,7 @@ export default function Choices() {
   const unicodeSymbols = [
     "√", "∛", "∜", "∑", "π", "∞", "Δ", "Ω",
     "α", "β", "γ", "θ", "μ", "λ", "σ", "φ", "ψ",
-    "∫", "≈", "≠", "≤", "≥", "÷", "×", "±",
+    "∫", "≈", "≠", "≤", "≥", "÷", "×", "±", "∠",
   ]
   const [showSymbols, setShowSymbols] = useState(false)
 

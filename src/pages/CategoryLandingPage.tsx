@@ -3,6 +3,13 @@ import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import logo from '../asset/leaf.png'
 import { Helmet } from 'react-helmet-async'
+import {
+  Facebook,
+  Instagram,
+  Youtube,
+  Music,
+  LucideIcon
+} from 'lucide-react'
 
 /* ================= TYPES ================= */
 
@@ -49,6 +56,22 @@ type Menu = {
   children?: Menu[]
 }
 
+type SocialLink = {
+  id: string
+  platform: string
+  url: string
+  icon: string
+  is_active: boolean
+  order_index: number
+}
+
+const SOCIAL_ICONS: Record<string, LucideIcon> = {
+  facebook: Facebook,
+  instagram: Instagram,
+  youtube: Youtube,
+  tiktok: Music,
+}
+
 /* ================= HELPERS ================= */
 
 function slugify(text: string) {
@@ -89,6 +112,7 @@ export default function CategoryLandingPage() {
   const [footerMenus, setFooterMenus] = useState<Menu[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
+  const [socialLinks, setSocialLinks] = useState<SocialLink[]>([])
 
   useEffect(() => {
     if (!slug) return
@@ -129,6 +153,7 @@ export default function CategoryLandingPage() {
       { data: latest },
       { data: menus },
       { data: pages },
+      { data: socialLinks },
     ] = await Promise.all([
       supabase
         .from('exam_sets')
@@ -157,6 +182,12 @@ export default function CategoryLandingPage() {
         .eq('status', 'published')
         .order('created_at', { ascending: false })
         .limit(3),
+
+      supabase
+        .from('social_links')
+        .select('*')
+        .eq('is_active', true)
+        .order('order_index'),
     ])
 
     /* ===== MENU RESOLVE ===== */
@@ -211,23 +242,39 @@ export default function CategoryLandingPage() {
     setHeaderMenus(buildMenuTree(resolved.filter(m => m.position === 'header')))
     setFooterMenus(resolved.filter(m => m.position === 'footer'))
     setLoading(false)
+    setSocialLinks(socialLinks || [])
   }
 
   if (loading || !category) {
     return <div className="min-h-screen flex items-center justify-center">Loading…</div>
   }
 
+  const siteUrl = window.location.origin
+
+  const pageTitle = `${category.name} | Latihan & Soal Online - LESSON`
+  const pageDescription =
+    category.description ||
+    `Latihan dan kumpulan soal ${category.name} lengkap dengan pembahasan. Cocok untuk persiapan ujian.`
+
+
   return (
     <>
-      {/* ===== SEO ===== */}
       <Helmet>
-        <title>{category.name} | LESSON</title>
-        <meta
-          name="description"
-          content={category.description || `Latihan soal ${category.name}`}
-        />
+        {/* BASIC SEO */}
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+        <link rel="canonical" href={`${siteUrl}/category/${category.slug}`} />
 
-        {/* Breadcrumb JSON-LD */}
+        {/* OPEN GRAPH */}
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
+        <meta property="og:url" content={`${siteUrl}/category/${category.slug}`} />
+        {category.banner_image && (
+          <meta property="og:image" content={category.banner_image} />
+        )}
+
+        {/* ================= BREADCRUMB SCHEMA ================= */}
         <script type="application/ld+json">
           {JSON.stringify({
             "@context": "https://schema.org",
@@ -237,21 +284,32 @@ export default function CategoryLandingPage() {
                 "@type": "ListItem",
                 position: 1,
                 name: "Home",
-                item: window.location.origin,
+                item: siteUrl,
               },
               {
                 "@type": "ListItem",
                 position: 2,
                 name: "Kategori",
-                item: `${window.location.origin}/category`,
+                item: `${siteUrl}/category`,
               },
               {
                 "@type": "ListItem",
                 position: 3,
                 name: category.name,
-                item: window.location.href,
+                item: `${siteUrl}/category/${category.slug}`,
               },
             ],
+          })}
+        </script>
+
+        {/* ================= COLLECTION PAGE SCHEMA ================= */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            name: category.name,
+            description: pageDescription,
+            url: `${siteUrl}/category/${category.slug}`,
           })}
         </script>
       </Helmet>
@@ -332,7 +390,13 @@ export default function CategoryLandingPage() {
         {/* CONTENT */}
         <main className="max-w-6xl mx-auto px-4 py-8 grid md:grid-cols-4 gap-10 flex-1">
           <div className="md:col-span-3 space-y-10">
-            <h2 className="text-3xl font-bold">{category.name}</h2>
+            <h1 className="text-3xl font-bold mb-2">{category.name}</h1>
+
+            {category.description && (
+              <p className="text-gray-600 max-w-2xl mb-8">
+                {category.description}
+              </p>
+            )}
 
             {subCategories.map(sub => {
               const exams = examSets.filter(e => e.sub_category_id === sub.id)
@@ -340,9 +404,9 @@ export default function CategoryLandingPage() {
 
               return (
                 <section key={sub.id} id={slugify(sub.name)}>
-                  <h3 className="text-lg font-semibold text-blue-600 mb-3">
+                  <h2 className="text-lg font-semibold text-blue-600 mb-3">
                     {sub.name}
-                  </h3>
+                  </h2>
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {exams.map(exam => (
                       <Link
@@ -357,16 +421,25 @@ export default function CategoryLandingPage() {
                 </section>
               )
             })}
+              <div className="mt-10 text-sm text-gray-500">
+              <Link to="/blog" className="hover:text-blue-600">
+                Baca artikel kami →
+              </Link>
+            </div>
           </div>
 
           <aside className="space-y-6">
             <div className="bg-white rounded-xl p-4 border">
               <h4 className="font-semibold mb-3">Latihan Terbaru</h4>
-              {latestExams.map(e => (
-                <Link key={e.id} to={`/exam/${e.id}`} className="block text-sm">
-                  {e.title}
-                </Link>
-              ))}
+              <ul className="space-y-2 text-sm">
+                {latestExams.map(e => (
+                  <li key={e.id}>
+                    <Link to={`/exam/${e.id}`} className="hover:text-blue-600">
+                      {e.title}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </div>
 
             {/* Latest Pages */}
@@ -396,6 +469,7 @@ export default function CategoryLandingPage() {
         {/* ================= FOOTER ================= */}
         <footer className="bg-gray-900 text-gray-300">
           <div className="max-w-6xl mx-auto px-4 py-10 grid md:grid-cols-3 gap-8">
+            {/* BRAND */}
             <div>
               <h3 className="font-bold text-white mb-2">LESSON</h3>
               <p className="text-sm">
@@ -403,6 +477,7 @@ export default function CategoryLandingPage() {
               </p>
             </div>
 
+            {/* MENU */}
             <div>
               <h4 className="font-semibold text-white mb-2">Menu</h4>
               <ul className="space-y-2 text-sm">
@@ -416,10 +491,37 @@ export default function CategoryLandingPage() {
               </ul>
             </div>
 
+            {/* KONTAK */}
             <div>
               <h4 className="font-semibold text-white mb-2">Kontak</h4>
               <p className="text-sm">Email: lesson.idn@gmail.com</p>
               <p className="text-sm">Whatsapp: 0851 2222 9986</p>
+
+              {/* Tambahkan margin agar tidak mepet */}
+              <h4 className="font-semibold text-white mt-6 mb-2">Sosial Media</h4>
+
+              {/* SOCIAL ICONS */}
+              {socialLinks.length > 0 && (
+                <div className="flex gap-3 mt-2">
+                  {socialLinks.map(s => {
+                    const Icon = SOCIAL_ICONS[s.icon]
+                    if (!Icon) return null
+
+                    return (
+                      <a
+                        key={s.id}
+                        href={s.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 rounded-full bg-gray-800 hover:bg-blue-600 transition"
+                        aria-label={s.platform}
+                      >
+                        <Icon size={16} />
+                      </a>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           </div>
 

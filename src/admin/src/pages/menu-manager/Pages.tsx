@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../../../../lib/supabase'
 
+/* ================= TYPES ================= */
+
 type PageStatus = 'draft' | 'published'
+
+type Category = {
+  id: string
+  name: string
+}
 
 type Page = {
   id: string
@@ -11,6 +18,7 @@ type Page = {
   content: string
   status: PageStatus
   featured_image: string | null
+  category_id: string | null
   created_at: string
 }
 
@@ -21,6 +29,7 @@ type PageForm = {
   content: string
   status: PageStatus
   featured_image: string | null
+  category_id: string | null
 }
 
 const emptyForm: PageForm = {
@@ -30,17 +39,24 @@ const emptyForm: PageForm = {
   content: '',
   status: 'draft',
   featured_image: null,
+  category_id: null,
 }
+
+/* ================= COMPONENT ================= */
 
 export default function Pages() {
   const [pages, setPages] = useState<Page[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
   const [form, setForm] = useState<PageForm>(emptyForm)
   const [editingId, setEditingId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
     loadPages()
+    loadCategories()
   }, [])
+
+  /* ================= LOADERS ================= */
 
   async function loadPages() {
     const { data } = await supabase
@@ -51,6 +67,19 @@ export default function Pages() {
     setPages(data || [])
   }
 
+  async function loadCategories() {
+    const { data } = await supabase
+      .from('categories')
+      .select('id, name')
+      .eq('is_published', true)
+      .eq('is_deleted', false)
+      .order('order_index')
+
+    setCategories(data || [])
+  }
+
+  /* ================= IMAGE UPLOAD ================= */
+
   async function uploadImage(file: File) {
     const ext = file.name.split('.').pop()
     const fileName = `${crypto.randomUUID()}.${ext}`
@@ -58,7 +87,7 @@ export default function Pages() {
 
     const { error } = await supabase.storage
       .from('pages')
-      .upload(filePath, file, { upsert: false })
+      .upload(filePath, file)
 
     if (error) throw error
 
@@ -68,6 +97,8 @@ export default function Pages() {
 
     return data.publicUrl
   }
+
+  /* ================= SAVE ================= */
 
   async function save() {
     if (!form.title || !form.content) {
@@ -90,6 +121,8 @@ export default function Pages() {
     loadPages()
   }
 
+  /* ================= EDIT ================= */
+
   function edit(p: Page) {
     setEditingId(p.id)
     setForm({
@@ -99,6 +132,7 @@ export default function Pages() {
       content: p.content,
       status: p.status,
       featured_image: p.featured_image,
+      category_id: p.category_id,
     })
 
     if (fileInputRef.current) {
@@ -106,20 +140,23 @@ export default function Pages() {
     }
   }
 
+  /* ================= DELETE ================= */
+
   async function remove(id: string) {
     if (!confirm('Hapus halaman ini?')) return
     await supabase.from('pages').delete().eq('id', id)
     loadPages()
   }
 
+  /* ================= RESET ================= */
+
   function reset() {
     setEditingId(null)
     setForm(emptyForm)
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
+
+  /* ================= RENDER ================= */
 
   return (
     <div className="space-y-6">
@@ -140,6 +177,22 @@ export default function Pages() {
           value={form.slug}
           onChange={e => setForm({ ...form, slug: e.target.value })}
         />
+
+        {/* CATEGORY */}
+        <select
+          className="border p-2 w-full rounded"
+          value={form.category_id ?? ''}
+          onChange={e =>
+            setForm({ ...form, category_id: e.target.value || null })
+          }
+        >
+          <option value="">— Pilih Kategori —</option>
+          {categories.map(c => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
 
         <textarea
           className="border p-2 w-full rounded"
@@ -230,6 +283,8 @@ export default function Pages() {
     </div>
   )
 }
+
+/* ================= HELPER ================= */
 
 function slugify(text: string) {
   return text
