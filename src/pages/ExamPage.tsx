@@ -1,6 +1,7 @@
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import logo from '../asset/leaf.png'
 
 type Category = {
   id: string
@@ -91,11 +92,28 @@ export default function ExamPage() {
   const category = exam.sub_categories[0]?.categories[0]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-pink-50">
-      <div className="max-w-3xl mx-auto px-4 py-16">
-        <div className="bg-white rounded-2xl shadow-lg p-8 space-y-6">
+  <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-pink-50">
+    <div className="max-w-3xl mx-auto px-4 py-8">
+      <h1 className="text-xl font-bold flex items-center text-gray-500">
+        LES
+        <span className="text-sky-300 flex">
+          SO
+          <span className="relative inline-block">
+            N
+            {/* ✅ Logo lebih kecil di atas huruf N */}
+            <img
+              src={logo}
+              alt="lesson"
+              className="absolute -top-4 left-1/2 -translate-x-1/2 h-4"
+            />
+          </span>
+        </span>
+      </h1>
 
-          {/* ✅ BACK TO CATEGORY dengan fallback */}
+      <div className="bg-white rounded-2xl shadow-lg p-8 space-y-6">
+
+        {/* ✅ Logo + BACK TO CATEGORY */}
+        <div className="flex items-center gap-2">        
           {category ? (
             <Link
               to={`/category/${category.slug}`}
@@ -111,10 +129,11 @@ export default function ExamPage() {
               ← Kembali ke daftar kategori
             </Link>
           )}
+        </div>
 
-          <h1 className="text-3xl font-bold text-indigo-600">
-            {exam.title}
-          </h1>
+        <h1 className="text-3xl font-bold text-indigo-600">
+          {exam.title}
+        </h1>
 
           {exam.description && (
             <p className="text-gray-700 leading-relaxed">

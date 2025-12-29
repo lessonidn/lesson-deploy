@@ -240,8 +240,12 @@ export async function getQuestions(examSetId?: string) {
 }
 
 // Tambah question baru
-export async function createQuestion(text: string, exam_set_id: string) {
-  return supabase.from('questions').insert([{ text, exam_set_id }])
+export async function createQuestion(text: string, examSetId: string) {
+  return supabase
+    .from('questions')
+    .insert([{ text, exam_set_id: examSetId }])
+    .select()
+    .single()
 }
 
 // Update question (text + exam_set_id)

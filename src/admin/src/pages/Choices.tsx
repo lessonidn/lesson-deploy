@@ -175,16 +175,21 @@ function renderExplanation(html: string) {
           className="border px-3 py-2 rounded w-full"
           value={questionId}
           onChange={e => {
-            setQuestionId(e.target.value)
+            const newId = e.target.value
+            setQuestionId(newId)
 
-            // ✅ reset mode edit kalau pindah soal
-            setEditId(null)
-            setText('')
-            setCorrect(false)
-            setExplanation('')
-            explanationEditor?.commands.setContent(`<p></p><p></p><p><br></p><p><br></p>`)
+            // ✅ hanya reset kalau sedang edit
+            if (editId) {
+              setEditId(null)
+              setText('')
+              setCorrect(false)
+              setExplanation('')
+              explanationEditor?.commands.setContent(`<p></p><p></p><p><br></p><p><br></p>`)
+            }
 
-            if (e.target.value) loadChoices(e.target.value)
+            if (newId) {
+              loadChoices(newId)
+            }
           }}
         >
           <option value="">Pilih Soal</option>

@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom'
 
 const menus = [
   { to: '/admin', label: 'Dashboard' },
+  { to: '/admin/media', label: 'Media' },
   { to: '/admin/categories', label: 'Categories' },
   { to: '/admin/sub-categories', label: 'Sub Categories' },
   { to: '/admin/exam-sets', label: 'Exam Sets' },

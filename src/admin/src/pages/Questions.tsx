@@ -11,11 +11,14 @@ import {
   getQuestions,
   createQuestion,
   updateQuestion,
-  deleteQuestion,
+  deleteQuestion,     // ✅ tambahkan
 } from '../lib/quizApi'
-import { uploadImageToSupabase } from '../lib/uploadImage'
 import { deleteImageFromSupabase } from '../lib/deleteImage'
 import { usePreventDoubleClick } from '../lib/usePreventDoubleClick'
+import { uploadImageAsWebP } from '../hooks/useImageUpload'
+import { supabase } from '../../../../src/lib/supabase'
+import MediaPickerModal from '../components/media/MediaPickerModal'
+
 
 type ExamSet = {
   id: string
@@ -28,6 +31,20 @@ type Question = {
   exam_set_id: string
   exam_title: string
   exam_set?: ExamSet
+}
+
+/* =========================
+   HELPER (AMAN)
+========================= */
+function publicUrlToPath(url: string): string {
+  try {
+    const u = new URL(url)
+    const idx = u.pathname.indexOf('/media/')
+    if (idx === -1) return url
+    return u.pathname.substring(idx + 7)
+  } catch {
+    return url
+  }
 }
 
 // ✅ Custom Image node pakai ResizableImage
@@ -63,13 +80,17 @@ export default function Questions() {
   const [sets, setSets] = useState<ExamSet[]>([])
   const [items, setItems] = useState<Question[]>([])
   const [text, setText] = useState('')
-  const [setId, setSetId] = useState('')   // exam yang dipilih
+  const [setId, setSetId] = useState('')
   const [editId, setEditId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const { canClick } = usePreventDoubleClick()
   const [search, setSearch] = useState('')
+  const [showMediaPicker, setShowMediaPicker] = useState(false)
 
-  //-- untuk unicode symbols ---
+  // -- fitur copy soal ---
+  const [copySource, setCopySource] = useState<Question | null>(null)
+  const [copyTargetSetId, setCopyTargetSetId] = useState('')
+
   const unicodeSymbols = [
     "√", "∛", "∜", "∑", "π", "∞", "Δ", "Ω",
     "α", "β", "γ", "θ", "μ", "λ", "σ", "φ", "ψ",
@@ -95,10 +116,9 @@ export default function Questions() {
       return
     }
     if (!text) return
-    if (!canClick()) return  // ✅ cegah double klik
+    if (!canClick()) return
 
     if (editId) {
-      // ✅ cek gambar lama vs baru
       const oldQuestion = items.find(q => q.id === editId)
       if (oldQuestion) {
         const regex = /<img[^>]+src="([^">]+)"/g
@@ -106,7 +126,7 @@ export default function Questions() {
         while ((match = regex.exec(oldQuestion.text)) !== null) {
           const oldUrl = match[1]
           if (!text.includes(oldUrl)) {
-            await deleteImageFromSupabase(oldUrl)
+            await deleteImageFromSupabase(publicUrlToPath(oldUrl))
           }
         }
       }
@@ -120,26 +140,21 @@ export default function Questions() {
     }
 
     setText('')
-    setError(null) // ✅ bersihkan warning
+    setError(null)
     editor?.commands.setContent(`<p></p><p></p><p><br></p><p><br></p>`)
     load()
   }
 
   async function remove(id: string) {
-    // ✅ cari soal lama
     const q = items.find(item => item.id === id)
     if (q) {
-      // ✅ cek semua <img src="..."> di soal
       const regex = /<img[^>]+src="([^">]+)"/g
       let match
       while ((match = regex.exec(q.text)) !== null) {
-        const oldUrl = match[1]
-        // hapus file dari Supabase Storage
-        await deleteImageFromSupabase(oldUrl)
+        await deleteImageFromSupabase(publicUrlToPath(match[1]))
       }
     }
 
-    // ✅ hapus soal dari tabel
     const { error } = await deleteQuestion(id)
     if (error) setError(error.message)
     load()
@@ -159,7 +174,6 @@ export default function Questions() {
     .filter(q => (setId ? q.exam_set_id === setId : true))
     .filter(q => q.text.toLowerCase().includes(search.toLowerCase()))
 
-  // ✅ Render soal dengan KaTeX + border tabel
   function renderSoal(html: string) {
     const latexRegex = /\$\$(.*?)\$\$/gs
     const replaced = html.replace(latexRegex, (_, expr) =>
@@ -167,28 +181,24 @@ export default function Questions() {
     )
     return (
       <div
-        className="prose max-w-none prose-p:my-0 prose-table:my-0 prose-img:my-0 [&_td]:p-1 [&_th]:p-1 [&_td]:text-sm [&_tr]:leading-tight [&_img]:max-w-[120px] [&_img]:h-auto [&_img]:mx-auto"
+        className="prose max-w-none prose-p:my-0 prose-table:my-0 prose-img:my-0"
         dangerouslySetInnerHTML={{ __html: replaced }}
       />
     )
   }
 
-  // ✅ Setup TipTap editor
   const editor = useEditor({
-  extensions: [
-    StarterKit,
-    Table.configure({ resizable: true }),
-    TableRow,
-    TableHeader,
-    TableCell,
-    CustomImage,
-  ],
+    extensions: [
+      StarterKit,
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableHeader,
+      TableCell,
+      CustomImage,
+    ],
     content: `<p></p><p></p><p><br></p><p><br></p>`,
-    onUpdate: ({ editor }) => {
-      setText(editor.getHTML())
-    },
+    onUpdate: ({ editor }) => setText(editor.getHTML()),
   })
-  
 
   return (
     <div className="space-y-4 bg-gray-50 min-h-screen p-4 sm:p-6">
@@ -199,12 +209,14 @@ export default function Questions() {
           className="border px-3 py-2 rounded max-w-xs truncate"
           value={setId}
           onChange={e => {
-            setSetId(e.target.value)
+            const newSetId = e.target.value
+            setSetId(newSetId)
 
-            // ✅ reset mode edit kalau pindah lembar soal
-            setEditId(null)
-            setText('')
-            editor?.commands.setContent(`<p></p><p></p><p><br></p><p><br></p>`)
+            // ✅ kalau sedang edit, jangan clear editor (biar bisa pindah soal ke lembar lain)
+            if (!editId) {
+              setText('')
+              editor?.commands.setContent(`<p></p><p></p><p><br></p><p><br></p>`)
+            }
           }}
         >
           <option value="">Pilih Lembar Soal</option>
@@ -246,18 +258,40 @@ export default function Questions() {
                 onChange={async e => {
                   const file = e.target.files?.[0]
                   if (!file) return
-                  try {
-                    const url = await uploadImageToSupabase(file)
-                    editor?.chain().focus().insertContent({
-                      type: 'customImage',
-                      attrs: { src: url, width: 200, height: 150 },
-                    }).run()
-                  } catch (err) {
-                    console.error('Upload gagal:', err)
-                  }
+
+                  const path = await uploadImageAsWebP(file, 'questions')
+                  const { data } = supabase.storage
+                    .from('media')
+                    .getPublicUrl(path)
+
+                  editor?.chain().focus().insertContent({
+                    type: 'customImage',
+                    attrs: { src: data.publicUrl, width: 200, height: 150 },
+                  }).run()
+
+                  e.target.value = ''
                 }}
               />
             </label>
+
+            <button
+              onClick={() => setShowMediaPicker(true)}
+              className="px-3 py-1 rounded hover:bg-gray-200 transition text-sm"
+            >
+              🗂 Media
+            </button>
+
+            <MediaPickerModal
+              open={showMediaPicker}
+              onClose={() => setShowMediaPicker(false)}
+              onSelect={(url) => {
+                setShowMediaPicker(false)
+                editor?.chain().focus().insertContent({
+                  type: 'customImage',
+                  attrs: { src: url, width: 200, height: 150 },
+                }).run()
+              }}
+            />
 
             {/* ✅ Tombol Unicode */}
             <button
@@ -381,36 +415,122 @@ export default function Questions() {
                     {q.exam_title || '-'}
                   </span>
                 </td>
-                <td className="p-2 border">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        setEditId(q.id)
-                        setText(q.text)
-                        setSetId(q.exam_set_id)
-                        editor?.commands.setContent(q.text) // ✅ isi editor dengan soal lama
-                        window.scrollTo({ top: 0, behavior: 'smooth' })
-                      }}
-                      className="px-2 py-1 bg-yellow-500 text-white rounded text-sm"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (window.confirm(`Apakah Anda yakin ingin menghapus Soal ini?`)) {
-                          remove(q.id)
-                        }
-                      }}
-                      className="px-2 py-1 bg-red-600 text-white rounded text-sm"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </td>
+               <td className="p-2 border">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setEditId(q.id)
+                      setText(q.text)
+                      setSetId(q.exam_set_id)
+                      editor?.commands.setContent(q.text)
+                      window.scrollTo({ top: 0, behavior: 'smooth' })
+                    }}
+                    className="px-2 py-1 bg-yellow-500 text-white rounded text-sm"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`Apakah Anda yakin ingin menghapus Soal ini?`)) {
+                        remove(q.id)
+                      }
+                    }}
+                    className="px-2 py-1 bg-red-600 text-white rounded text-sm"
+                  >
+                    Delete
+                  </button>
+                  <button
+                    onClick={() => setCopySource(q)}
+                    className="px-2 py-1 bg-green-600 text-white rounded text-sm"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </td>
               </tr>
             ))}
           </tbody>
         </table>
+        
+        {copySource && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div className="bg-white rounded shadow-lg p-4 w-full max-w-md space-y-4">
+              <h3 className="font-semibold">Copy Soal</h3>
+              <p className="text-sm text-gray-600">Pilih lembar tujuan untuk menyalin soal:</p>
+
+              <select
+                className="border px-3 py-2 rounded w-full"
+                value={copyTargetSetId}
+                onChange={e => setCopyTargetSetId(e.target.value)}
+              >
+                <option value="">-- Pilih Lembar Tujuan --</option>
+                {sets.map(s => (
+                  <option key={s.id} value={s.id}>{s.title}</option>
+                ))}
+              </select>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={async () => {
+                    if (!copyTargetSetId) {
+                      alert('Pilih lembar tujuan dulu')
+                      return
+                    }
+
+                    // ✅ buat soal baru di lembar tujuan
+                    const { data: newQuestionData, error: newQuestionError } = await createQuestion(
+                      copySource!.text,
+                      copyTargetSetId
+                    )
+
+                    if (newQuestionError) {
+                      alert(`Gagal membuat soal baru: ${newQuestionError.message}`)
+                      return
+                    }
+
+                    // Supabase bisa return array atau single object tergantung implementasi quizApi
+                    const newQuestion =
+                      Array.isArray(newQuestionData) ? newQuestionData[0] : newQuestionData
+
+                    if (!newQuestion?.id) {
+                      alert('Gagal mendapatkan ID soal baru setelah insert.')
+                      return
+                    }
+
+                    // ✅ langsung update state items agar soal baru muncul tanpa reload
+                    setItems(prev => [
+                      { 
+                        id: newQuestion.id,
+                        text: newQuestion.text,
+                        exam_set_id: newQuestion.exam_set_id,
+                        exam_title: sets.find(s => s.id === newQuestion.exam_set_id)?.title || ''
+                      },
+                      ...prev
+                    ])
+
+                    alert('Soal berhasil dicopy ke lembar tujuan')
+
+                    // reset state modal
+                    setCopySource(null)
+                    setCopyTargetSetId('')
+                  }}
+                  className="bg-indigo-600 text-white px-4 py-2 rounded"
+                >
+                  Confirm Copy
+                </button>
+                <button
+                  onClick={() => {
+                    setCopySource(null)
+                    setCopyTargetSetId('')
+                  }}
+                  className="bg-gray-400 text-white px-4 py-2 rounded"
+                >
+                  Batal
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

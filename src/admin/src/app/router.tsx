@@ -4,6 +4,7 @@ import AdminLayout from '../layouts/AdminLayout'
 
 import AdminLogin from '../pages/Login'
 import Dashboard from '../pages/Dashboard'
+import Media from '../pages/Media'
 import Categories from '../pages/Categories'
 import SubCategories from '../pages/SubCategories'
 import ExamSets from '../pages/ExamSets'
@@ -30,6 +31,7 @@ export const adminRoutes: RouteObject[] = [
         element: <AdminLayout />,
         children: [
           { index: true, element: <Dashboard /> },
+          { path: 'media', element: <Media /> },
           { path: 'categories', element: <Categories /> },
           { path: 'sub-categories', element: <SubCategories /> },
           { path: 'exam-sets', element: <ExamSets /> },
