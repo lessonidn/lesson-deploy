@@ -81,7 +81,7 @@ export default function Media() {
       {loading && <p>Memuat media...</p>}
       {error && <p className="text-red-600">{error}</p>}
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-4">
         {files.map(file => (
           <div
             key={file.path}
@@ -90,7 +90,7 @@ export default function Media() {
             <img
               src={file.publicUrl}
               alt={file.name}
-              className="object-contain h-32 w-full bg-gray-50"
+              className="object-contain h-20 w-full bg-gray-50"
               onError={e => { e.currentTarget.style.display = 'none' }} // ✅ hide broken image
             />
 
