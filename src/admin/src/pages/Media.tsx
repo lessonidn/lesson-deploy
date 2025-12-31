@@ -13,6 +13,7 @@ export default function Media() {
   const [files, setFiles] = useState<MediaFile[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null) // ✅ state untuk preview
 
   async function loadMedia() {
     setLoading(true)
@@ -87,12 +88,24 @@ export default function Media() {
             key={file.path}
             className="border rounded bg-white p-2 flex flex-col gap-2"
           >
-            <img
+           <img
               src={file.publicUrl}
               alt={file.name}
-              className="object-contain h-20 w-full bg-gray-50"
-              onError={e => { e.currentTarget.style.display = 'none' }} // ✅ hide broken image
+              className="object-contain h-20 w-full bg-gray-50 cursor-pointer"
+              onError={e => { e.currentTarget.style.display = 'none' }}
+              onMouseEnter={() => setPreviewUrl(file.publicUrl)}
+              onMouseLeave={() => setPreviewUrl(null)}
             />
+
+            {previewUrl && (
+              <div className="fixed right-4 top-20 w-96 bg-white shadow-lg border rounded p-2">
+                <img
+                  src={previewUrl}
+                  alt="Preview"
+                  className="max-w-full max-h-[80vh] object-contain"
+                />
+              </div>
+            )}
 
             <p className="text-xs truncate" title={file.name}>
               {file.name}
