@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useEditor, EditorContent } from '@tiptap/react'
+import { useEditor, EditorContent, ReactNodeViewRenderer } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { Table, TableRow, TableCell, TableHeader } from '@tiptap/extension-table'
 import 'katex/dist/katex.min.css'
@@ -13,6 +13,11 @@ import {
   getExamSets, // ✅ tambahkan API ambil exam_sets
 } from '../lib/quizApi'
 import { usePreventDoubleClick } from '../lib/usePreventDoubleClick'
+import { supabase } from '../../../../src/lib/supabase'
+import { uploadImageAsWebP } from '../hooks/useImageUpload'
+import MediaPickerModal from '../components/media/MediaPickerModal'
+import { Node } from '@tiptap/core'
+import ResizableImage from '../lib/ResizableImage'
 
 type ExamSet = {
   id: string
@@ -33,6 +38,36 @@ type Choice = {
   explanation?: string
 }
 
+// ✅ Custom Image node pakai ResizableImage
+const CustomImage = Node.create({
+  name: 'customImage',
+  group: 'block',
+  inline: false,
+  draggable: true,
+  atom: true,
+
+  addAttributes() {
+    return {
+      src: { default: null },
+      width: { default: 200 },
+      height: { default: 150 },
+    }
+  },
+
+  parseHTML() {
+    return [{ tag: 'img[src]' }]
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ['img', HTMLAttributes]
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(ResizableImage)
+  },
+})
+
+
 export default function Choices() {
   const [examSets, setExamSets] = useState<ExamSet[]>([])
   const [examId, setExamId] = useState('')
@@ -45,6 +80,7 @@ export default function Choices() {
   const [choices, setChoices] = useState<Choice[]>([])
   const [editId, setEditId] = useState<string | null>(null)
   const { canClick } = usePreventDoubleClick()
+  const [showMediaPicker, setShowMediaPicker] = useState(false)
 
   const unicodeSymbols = [
     "√", "∛", "∜", "∑", "π", "∞", "Δ", "Ω",
@@ -140,6 +176,7 @@ function renderExplanation(html: string) {
       TableRow,
       TableHeader,
       TableCell,
+      CustomImage,
     ],
     content: `<p></p><p></p><p><br></p><p><br></p>`, // default tinggi editor
     onUpdate: ({ editor }) => {
@@ -221,6 +258,8 @@ function renderExplanation(html: string) {
 
       {/* Editor penjelasan jawaban */}
       <div className="editor-preview border rounded bg-white mt-2">
+        <p className="text-center text-sky-600 mt-2">
+         Penjelasan Kunci Jawaban </p>
         {/* Toolbar */}
         <div className="flex flex-wrap items-center gap-2 border-b p-2 bg-gray-50">
           <button onClick={() => explanationEditor?.chain().focus().toggleBold().run()}
@@ -239,6 +278,53 @@ function renderExplanation(html: string) {
             className="px-3 py-1 rounded hover:bg-gray-200 transition text-sm">⌗ Table</button>
           <button onClick={() => explanationEditor?.chain().focus().insertContent('$$a^2 + b^2 = c^2$$').run()}
             className="px-3 py-1 rounded hover:bg-gray-200 transition text-sm">∑ Rumus</button>
+          
+          {/* Insert Gambar */}
+          <label className="px-3 py-1 rounded hover:bg-gray-200 transition text-sm cursor-pointer">
+            🖼 Gambar
+            <input
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={async e => {
+                const file = e.target.files?.[0]
+                if (!file) return
+
+                const path = await uploadImageAsWebP(file, 'questions')
+                const { data } = supabase.storage
+                  .from('media')
+                  .getPublicUrl(path)
+
+                explanationEditor?.chain().focus().insertContent({
+                  type: 'customImage',
+                  attrs: { src: data.publicUrl, width: 200, height: 150 },
+                }).run()
+
+                e.target.value = ''
+              }}
+            />
+          </label>
+
+          <button
+            onClick={() => setShowMediaPicker(true)}
+            className="px-3 py-1 rounded hover:bg-gray-200 transition text-sm"
+          >
+            🗂 Media
+          </button>
+
+          <MediaPickerModal
+            open={showMediaPicker}
+            onClose={() => setShowMediaPicker(false)}
+            onSelect={(url) => {
+              setShowMediaPicker(false)
+              explanationEditor?.chain().focus().insertContent({
+                type: 'customImage',
+                attrs: { src: url, width: 200, height: 150 },
+              }).run()
+            }}
+          />
+
+          {/* ✅ Tombol Unicode */}
           <button
             onClick={() => setShowSymbols(!showSymbols)}
             className="px-3 py-1 rounded hover:bg-gray-200 transition text-sm"

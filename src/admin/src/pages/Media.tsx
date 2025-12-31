@@ -33,11 +33,11 @@ export default function Media() {
           // ✅ Skip folder kosong atau file tanpa nama
           if (!file.name || file.metadata?.size === 0) continue
 
-          const path = `${folder}/${file.name}`
+          const path = folder === '' ? file.name : `${folder}/${file.name}`
           const { data: urlData } = supabase.storage
             .from('media')
             .getPublicUrl(path)
-
+          
           if (urlData?.publicUrl) {
             allFiles.push({
               name: file.name,
@@ -57,20 +57,21 @@ export default function Media() {
   }
 
   async function deleteMedia(path: string) {
-  if (!confirm('Yakin ingin menghapus gambar ini?')) return
+    if (!confirm('Yakin ingin menghapus gambar ini?')) return
 
-  console.log('Deleting path:', path)
-  const { error } = await supabase.storage.from('media').remove([path])
+    const { error } = await supabase.storage.from('media').remove([path])
 
-  if (error) {
-    alert(`Gagal hapus: ${error.message}`)
-  } else {
-    await loadMedia() // refresh list dari server
+    if (error) {
+      console.error('Delete error:', error)
+      alert(`Gagal hapus: ${error.message}`)
+    } else {
+      setFiles(prev => prev.filter(f => f.path !== path))
+    }
   }
-}
 
   useEffect(() => {
     loadMedia()
+    
   }, [])
 
   return (
