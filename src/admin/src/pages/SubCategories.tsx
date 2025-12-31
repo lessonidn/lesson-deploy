@@ -89,7 +89,7 @@ export default function SubCategories() {
   const filteredItems = items
 
   return (
-    <div className="space-y-4 bg-gray-50 min-h-screen p-4 sm:p-6">
+    <div className="space-y-6">
       <h2 className="text-xl font-semibold">Sub Categories</h2>
 
       {/* FORM INPUT */}

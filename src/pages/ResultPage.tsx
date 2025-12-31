@@ -127,7 +127,7 @@ export default function ResultPage() {
       <div
         className="prose max-w-none prose-p:my-0 prose-table:my-0 prose-img:my-0
                   [&_td]:p-1 [&_th]:p-1 [&_td]:text-sm [&_tr]:leading-tight
-                  [&_img]:max-w-[120px] [&_img]:h-auto [&_img]:mx-auto"
+                  [&_img]:max-w-[500px] [&_img]:h-auto [&_img]:mx-auto"
         dangerouslySetInnerHTML={{ __html: replaced }}
       />
     )

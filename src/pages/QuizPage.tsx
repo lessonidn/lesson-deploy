@@ -42,11 +42,13 @@ export default function QuizPage() {
   function goNext() {
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(i => i + 1)
+      window.scrollTo({ top: 0, behavior: 'smooth' })   // ⬅️ scroll ke atas
       return
     }
     const unanswered = getUnansweredIndexes()
     if (unanswered.length > 0) {
       setCurrentIndex(unanswered[0])
+      window.scrollTo({ top: 0, behavior: 'smooth' })   // ⬅️ scroll ke atas
       return
     }
     submitQuiz()
@@ -271,7 +273,10 @@ export default function QuizPage() {
           <div className="flex justify-between pt-6">
             <button
               disabled={currentIndex === 0 || isTimeUp}
-              onClick={() => setCurrentIndex(i => i - 1)}
+              onClick={() => {
+                setCurrentIndex(i => i - 1)
+                window.scrollTo({ top: 0, behavior: 'smooth' })   // ⬅️ scroll ke atas
+              }}
               className="px-5 py-2 rounded-lg border disabled:opacity-40"
             >
               ← Sebelumnya
