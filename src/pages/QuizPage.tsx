@@ -67,6 +67,22 @@ export default function QuizPage() {
     )
   }
 
+  function renderChoice(html: string) {
+    const blockRegex = /\$\$([\s\S]*?)\$\$/g
+    const replaced = html.replace(blockRegex, (_, expr) =>
+      katex.renderToString(expr.trim(), {
+        throwOnError: false,
+        displayMode: true,
+      })
+    )
+    return (
+      <span
+        className="prose max-w-none prose-p:my-0 prose-img:my-0"
+        dangerouslySetInnerHTML={{ __html: replaced }}
+      />
+    )
+  }
+
   const submitQuiz = useCallback(async () => {
     if (submitting || isTimeUp) return
     setSubmitting(true)
@@ -264,7 +280,7 @@ export default function QuizPage() {
                   className="accent-indigo-600"
                 />
                 <span className="font-medium">{String.fromCharCode(65 + idx)}.</span>
-                <span>{c.text}</span>
+                {renderChoice(c.text)}
               </label>
             ))}
           </div>

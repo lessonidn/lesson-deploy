@@ -111,12 +111,15 @@ export default function Choices() {
     if (!questionId || !text) return
     if (!canClick()) return
 
+    const cleanedText = cleanHtmlTail(text)
+    const cleanedExplanation = cleanHtmlTail(explanation)
+
     if (editId) {
-      const { error } = await updateChoice(editId, text, correct, explanation)
+      const { error } = await updateChoice(editId, cleanedText, correct, cleanedExplanation)
       if (error) setError(error.message)
       setEditId(null)
     } else {
-      const { error } = await createChoice(questionId, text, correct, explanation)
+      const { error } = await createChoice(questionId, cleanedText, correct, cleanedExplanation)
       if (error) setError(error.message)
     }
 
@@ -138,7 +141,7 @@ export default function Choices() {
     setText('')
     setCorrect(false)
     setExplanation('')
-    explanationEditor?.commands.setContent(`<p></p><p></p><p><br></p><p><br></p>`) // ✅ reset editor visual
+    explanationEditor?.commands.setContent(`<p><br></p>`) // ✅ reset editor visual
   }
 
   //--- UNTUK ISI RUMUS ---
@@ -182,6 +185,11 @@ function renderLatexBlocks(html: string) {
       dangerouslySetInnerHTML={{ __html: replaced }}
     />
   )
+}
+
+function cleanHtmlTail(html: string) {
+  // Hapus <p><br></p> atau <p></p> di akhir
+  return html.replace(/(<p>(<br\s*\/?>)?<\/p>\s*)+$/g, '')
 }
 
   // --- textarea penjelasan ---

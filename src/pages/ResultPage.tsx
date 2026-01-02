@@ -133,6 +133,45 @@ export default function ResultPage() {
     )
   }
 
+  function renderChoice(html: string) {
+    if (!html) return null
+
+    let decoded = html.replace(/\\\\/g, '\\')
+    decoded = decoded.replace(/<\/?[^>]+(>|$)/g, '')
+
+    const blockRegex = /\$\$([\s\S]*?)\$\$/g
+    const inlineRegex = /\$(.+?)\$/g
+
+    const replaced = decoded
+  .replace(blockRegex, (_, expr) => {
+    try {
+      return katex.renderToString(expr.trim(), {
+        throwOnError: false,
+        displayMode: false,
+      })
+    } catch {
+      return expr
+    }
+  })
+  .replace(inlineRegex, (_, expr) => {
+    try {
+      return katex.renderToString(expr.trim(), {
+        throwOnError: false,
+        displayMode: false,
+      })
+    } catch {
+      return expr
+    }
+  })
+
+    return (
+      <div
+        className="prose max-w-none prose-p:my-0 prose-img:my-0 text-left"
+        dangerouslySetInnerHTML={{ __html: replaced }}
+      />
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* HEADER */}
@@ -177,7 +216,7 @@ export default function ResultPage() {
                           : 'border-gray-200'
                       }`}
                   >
-                    {c.text}
+                    {renderChoice(c.text)}
                     {c.is_correct && (
                       <span className="ml-2 font-semibold">(Jawaban Benar)</span>
                     )}
