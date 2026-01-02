@@ -168,6 +168,22 @@ function renderExplanation(html: string) {
   )
 }
 
+function renderLatexBlocks(html: string) {
+  const blockRegex = /\$\$([\s\S]*?)\$\$/g // ✅ tangkap semua isi antar $$...$$ termasuk newline
+  const replaced = html.replace(blockRegex, (_, expr) =>
+    katex.renderToString(expr.trim(), {
+      throwOnError: false,
+      displayMode: true,
+    })
+  )
+  return (
+    <div
+      className="prose max-w-none prose-p:my-0 prose-img:my-0"
+      dangerouslySetInnerHTML={{ __html: replaced }}
+    />
+  )
+}
+
   // --- textarea penjelasan ---
   const explanationEditor = useEditor({
     extensions: [
@@ -239,11 +255,12 @@ function renderExplanation(html: string) {
             ))}
         </select>
 
-        <input
+        <textarea
           className="border px-3 py-2 rounded w-full md:col-span-2"
-          placeholder="Jawaban"
+          placeholder="Jawaban (boleh pakai $$...$$ untuk rumus)"
           value={text}
           onChange={e => setText(e.target.value)}
+          rows={1}
         />
 
         <label className="flex items-center gap-1 w-full">
@@ -406,7 +423,7 @@ function renderExplanation(html: string) {
               <li key={c.id} className="p-3 flex justify-between items-start">
                 <div className="max-w-[80%]">
                   <div className="text-base">
-                    {c.text}{' '}
+                    {renderLatexBlocks(c.text)}
                     {c.is_correct && (
                       <span className="text-green-600 font-semibold">✔</span>
                     )}

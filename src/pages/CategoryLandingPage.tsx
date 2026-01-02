@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import logo from '../asset/leaf.png'
+import logo from '../../public/leaf.png'
 import { Helmet } from 'react-helmet-async'
 import {
   Facebook,
