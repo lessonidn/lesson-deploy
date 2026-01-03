@@ -76,3 +76,20 @@
     max-width: 500px;
   }
 }
+
+@keyframes glowSoft {
+  0%, 100% {
+    text-shadow:
+      0 0 6px rgba(56,189,248,0.4),
+      0 0 12px rgba(56,189,248,0.2);
+  }
+  50% {
+    text-shadow:
+      0 0 10px rgba(56,189,248,0.7),
+      0 0 20px rgba(56,189,248,0.4);
+  }
+}
+
+.glow-son {
+  animation: glowSoft 3s ease-in-out infinite;
+}

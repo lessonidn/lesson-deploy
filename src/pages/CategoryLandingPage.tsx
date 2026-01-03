@@ -315,25 +315,52 @@ export default function CategoryLandingPage() {
       </Helmet>
 
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        <header className="relative bg-blue-600 text-white z-40">
-          <div className="max-w-6xl mx-auto px-4 py-5 flex justify-between items-center">
+        <header className="relative z-50">
+          {/* Background */}
+          <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-black" />
+
+          {/* Motif karbon */}
+          <div
+            className="absolute inset-0 opacity-[0.08]"
+            style={{
+              backgroundImage: `
+                repeating-linear-gradient(
+                  45deg,
+                  rgba(255,255,255,0.15) 0,
+                  rgba(255,255,255,0.15) 1px,
+                  transparent 1px,
+                  transparent 6px
+                )
+              `,
+            }}
+          />
+
+          {/* Content */}
+          <div className="relative max-w-6xl mx-auto px-4 py-5 flex justify-between items-center text-white">
             <div className="relative">
               <img src={logo} alt="lesson" className="absolute -top-5 right-7 h-6" />
-              <h1 className="text-3xl font-bold">
-                LES<span className="text-sky-200">SON</span>
+              <h1 className="text-3xl font-extrabold tracking-wide">
+                <span className="text-white drop-shadow">
+                  LES
+                </span>
+                <span className="text-sky-400 glow-son">
+                  SON
+                </span>
               </h1>
-              <p className="text-xs text-blue-100">The Best Choice Of Tutoring</p>
+              <p className="text-xs text-gray-300 tracking-wide">
+                The Best Choice Of Tutoring
+              </p>
             </div>
 
             <div className="flex items-center gap-6">
               <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
                 {headerMenus.map(menu => (
-                  <div key={menu.id} className="relative group">
+                  <div key={menu.id} className="relative group z-50 pb-3">
                     {/* Parent menu: pakai button kalau hanya pemicu dropdown */}
                     {menu.children?.length ? (
                       <button
                         type="button"
-                        className="flex items-center gap-1 hover:text-sky-300"
+                        className="flex items-center gap-1 hover:text-sky-400 transition"
                       >
                         {menu.label}
                         <span className="text-xs">▼</span>
@@ -349,14 +376,29 @@ export default function CategoryLandingPage() {
 
                     {menu.children?.length ? (
                       <div
-                        className="absolute left-0 top-full mt-0 bg-white text-gray-800 rounded-xl shadow-lg
-                                  hidden group-hover:block hover:block z-50 w-auto min-w-max"
+                        className="
+                          z-[9999] absolute left-0 top-full mt-0
+                          bg-black/40 backdrop-blur-md
+                          rounded
+                          hidden group-hover:block
+                          w-auto min-w-max
+                          border border-white/10
+                          shadow-xl
+                        "
                       >
+
                         {menu.children.map(child => (
                           <Link
                             key={child.id}
                             to={child.url || '#'}
-                            className="block px-4 py-2 hover:bg-blue-50 text-sm whitespace-nowrap"
+                            className="
+                              block px-4 py-2
+                              text-sm text-white/90 whitespace-nowrap
+                              hover:bg-white/10
+                              hover:text-sky-300
+                              transition
+                              border-b border-white/10 last:border-none
+                            "
                           >
                             {child.label}
                           </Link>
@@ -372,7 +414,7 @@ export default function CategoryLandingPage() {
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   placeholder="Cari latihan / ujian..."
-                  className="border rounded-xl px-3 py-2 text-sm text-black w-48 pr-8"
+                  className="border border-gray-600 bg-gray-900 text-white rounded-xl px-3 py-2 text-sm w-48 pr-8 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
                 />
                 {search && (
                   <button
@@ -409,13 +451,26 @@ export default function CategoryLandingPage() {
                   </h2>
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {exams.map(exam => (
-                      <Link
-                        key={exam.id}
-                        to={`/exam/${exam.id}`}
-                        className="p-4 bg-white rounded-xl border hover:shadow"
-                      >
-                        {exam.title}
-                      </Link>
+            <Link
+                            key={exam.id}
+                            to={`/exam/${exam.id}`}
+                            className="p-5 bg-white rounded-2xl border hover:shadow-lg hover:-translate-y-1 transition"
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
+                                ✏️
+                              </div>
+
+                              <div>
+                                <div className="font-semibold text-gray-800">
+                                  {exam.title}
+                                </div>
+                                <div className="text-xs text-blue-600 mt-2">
+                                  Kerjakan Sekarang →
+                                </div>
+                              </div>
+                            </div>
+                          </Link>
                     ))}
                   </div>
                 </section>
@@ -429,8 +484,11 @@ export default function CategoryLandingPage() {
           </div>
 
           <aside className="space-y-6">
+            {/* Latest Exams */}
             <div className="bg-white rounded-xl p-4 border">
-              <h4 className="font-semibold mb-3">Latihan Terbaru</h4>
+              <h4 className="font-semibold mb-3 border-b pb-2">
+                Latihan Terbaru
+              </h4>
               <ul className="space-y-2 text-sm">
                 {latestExams.map(e => (
                   <li key={e.id}>
@@ -444,7 +502,9 @@ export default function CategoryLandingPage() {
 
             {/* Latest Pages */}
             <div className="bg-white rounded-xl p-4 border">
-              <h4 className="font-semibold mb-3">Artikel Terbaru</h4>
+              <h4 className="font-semibold mb-3 border-b pb-2">
+                Artikel Terbaru
+              </h4>
               <ul className="space-y-3 text-sm">
                 {latestPages.map(p => (
                   <li key={p.id}>

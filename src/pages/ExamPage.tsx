@@ -126,7 +126,7 @@ export default function ExamPage() {
               to="/category"
               className="text-sm text-blue-600 hover:underline inline-block"
             >
-              ← Kembali ke daftar kategori
+              ← Kembali ke daftar Mata Pelajaran
             </Link>
           )}
         </div>
