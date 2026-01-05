@@ -170,6 +170,7 @@ export async function getExamSets(subCategoryId?: string) {
       sub_category_id,
       duration_minutes,
       is_published,
+      is_member_only,
       sub_categories (
         id,
         name,
@@ -198,20 +199,24 @@ export async function createExamSet(payload: {
     {
       title: payload.title,
       sub_category_id: payload.sub_category_id,
-      duration_minutes: payload.duration_minutes ?? 30, // ✅ default 30 menit
+      duration_minutes: payload.duration_minutes ?? 30,
       is_deleted: false,
-      is_published: false, // tetap draft
+      is_published: false,
+      is_member_only: false, // ✅ TEGAS
     },
   ])
 }
 
+export type UpdateExamSetPayload = {
+  title?: string
+  sub_category_id?: string
+  duration_minutes?: number
+  is_member_only?: boolean   // ✅ TAMBAH RESMI
+}
+
 export async function updateExamSet(
   id: string,
-  payload: {
-    title?: string
-    sub_category_id?: string
-    duration_minutes?: number
-  }
+  payload: UpdateExamSetPayload
 ) {
   return supabase
     .from('exam_sets')

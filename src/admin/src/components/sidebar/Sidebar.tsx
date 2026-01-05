@@ -11,6 +11,8 @@ const menus = [
 
   // 🔥 CMS / WORDPRESS-LIKE
   { to: '/admin/menu-manager', label: 'Menu Manager' },
+
+  { to: '/admin/invite-member', label: 'Invite Member' },
 ]
 
 type SidebarProps = {

@@ -24,6 +24,7 @@ type ExamSet = {
   sub_category_id: string
   duration_minutes: number
   is_published: boolean
+  is_member_only: boolean   // ✅ TAMBAH
   sub_categories?: {
     id: string
     name: string
@@ -155,6 +156,20 @@ export default function ExamSets() {
             value={durationMinutes}
             onChange={e => setDurationMinutes(Number(e.target.value))}
           />
+          
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={items.find(e => e.id === editId)?.is_member_only || false}
+              onChange={e => {
+                if (!editId) return
+                updateExamSet(editId, { is_member_only: e.target.checked })
+                  .then(load)
+              }}
+            />
+            Khusus Member
+          </label>
+
           <button
             onClick={save}
             className="bg-indigo-600 text-white px-4 py-2 rounded"
@@ -211,8 +226,20 @@ export default function ExamSets() {
           .map(i => (
             <li key={i.id} className="p-4 flex justify-between items-center hover:bg-yellow-300 transition-colors">
               <div>
-                <div className="font-medium flex items-center gap-2">
+                <div className="font-medium flex items-center gap-2 flex-wrap">
                   {i.title}
+
+                  {/* LABEL MEMBER */}
+                  { i.is_member_only && (
+                    <span
+                      title="Exam ini hanya bisa diakses oleh member (berbayar & undangan)"
+                      className="text-xs px-2 py-0.5 rounded bg-purple-100 text-purple-700 cursor-help"
+                    >
+                      Khusus Member
+                    </span>
+                  )}
+
+                  {/* LABEL PUBLISH */}
                   {i.is_published ? (
                     <span className="text-xs px-2 py-0.5 rounded bg-green-100 text-green-700">
                       Published

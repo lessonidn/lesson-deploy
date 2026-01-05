@@ -8,6 +8,9 @@ import BlogArchive from '../pages/BlogArchive'
 import CategoryLandingPage from '../pages/CategoryLandingPage'
 import CategoryIndexPage from '../pages/CategoryIndexPage'
 import SitemapPage from "../pages/SitemapPage"
+import AboutPage from "../pages/AboutPage"
+import DonationPage from "../pages/DonationPage"
+import UpgradeMember from "../pages/UpgradeMember"
 
 export const userRoutes: RouteObject[] = [
   { path: '/', element: <Home /> },
@@ -19,4 +22,7 @@ export const userRoutes: RouteObject[] = [
   { path: '/blog', element: <BlogArchive /> }, // ✅ ARCHIVE
   { path: '/category/:slug', element: <CategoryLandingPage /> },
   { path: "/sitemap.xml", element: <SitemapPage /> },
+  { path: "/tentang-kami", element: <AboutPage /> },
+  { path: "/donasi", element: <DonationPage /> },
+  { path: "/upgrade", element: <UpgradeMember /> },
 ]

@@ -32,6 +32,7 @@ type ExamSet = {
   title: string
   sub_category_id: string
   created_at: string
+  is_member_only: boolean   // ✅ TAMBAH
 }
 
 type Page = {
@@ -92,6 +93,25 @@ function buildMenuTree(menus: Menu[]) {
   return roots
 }
 
+  //-- SLIDER BANNER ---
+  const heroSlides = [
+    {
+      image:
+        'https://images.unsplash.com/photo-1565598611425-45b0878bdd0b?q=80&w=1170&auto=format&fit=crop',
+      link: '/category',
+    },
+    {
+      image:
+        'https://images.unsplash.com/photo-1756102080345-797e02549f97?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      link: '/donasi',
+    },
+    {
+      image:
+        'https://images.unsplash.com/photo-1625111381887-458fce74a923?q=80&w=1171&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      link: '/tentang-kami',
+    },
+  ]
+
 /* ================= COMPONENT ================= */
 
 export default function Home() {
@@ -109,6 +129,21 @@ export default function Home() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
 
+  /* ===== HERO SLIDER STATE (WAJIB DI SINI) ===== */
+  const [currentSlide, setCurrentSlide] = useState(0)
+
+  // Auto slide hero
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide(prev =>
+        prev === heroSlides.length - 1 ? 0 : prev + 1
+      )
+    }, 4000)
+
+    return () => clearInterval(timer)
+  }, [])
+
+  // Header scroll effect
   useEffect(() => {
     const onScroll = () => {
       setScrolled(window.scrollY > 20)
@@ -117,7 +152,7 @@ export default function Home() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-
+  // Load data
   useEffect(() => {
     loadAll()
   }, [])
@@ -147,13 +182,13 @@ export default function Home() {
 
       supabase
         .from('exam_sets')
-        .select('id, title, sub_category_id, created_at')
+        .select('id, title, sub_category_id, created_at, is_member_only')
         .eq('is_published', true)
         .eq('is_deleted', false),
 
       supabase
         .from('exam_sets')
-        .select('id, title, sub_category_id, created_at')
+        .select('id, title, sub_category_id, created_at, is_member_only')
         .eq('is_published', true)
         .eq('is_deleted', false)
         .order('created_at', { ascending: false })
@@ -258,6 +293,7 @@ export default function Home() {
     e.title.toLowerCase().includes(search.toLowerCase())
   )
 
+
   /* ================= RENDER ================= */
 
   return (
@@ -310,7 +346,7 @@ export default function Home() {
           <div className="flex items-center gap-6">
             <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
               {headerMenus.map(menu => (
-                <div key={menu.id} className="relative group z-50 pb-3">
+                <div key={menu.id} className="relative group z-50">
                   {/* Parent menu: pakai button kalau hanya pemicu dropdown */}
                   {menu.children?.length ? (
                     <button
@@ -363,6 +399,16 @@ export default function Home() {
                 </div>
               ))}
             </nav>
+
+            {/* CTA MEMBER */}
+            <div className="hidden md:flex items-center gap-3">
+              <Link
+                to="/admin/login"
+                className="bg-sky-500 hover:bg-sky-400 text-black px-4 py-2 rounded-lg text-sm font-semibold transition"
+              >
+                Masuk Member
+              </Link>
+            </div>
 
             <div className="relative">
               <input
@@ -417,8 +463,9 @@ export default function Home() {
       )}
 
       {/* ================= HERO ================= */}
-      <section className="pt-24 relative z-10 bg-gradient-to-br from-blue-900 to-sky-500 text-white">
+      <section className="pt-24 relative z-10 bg-gradient-to-br from-blue-900 to-sky-500 text-white overflow-hidden">
         <div className="max-w-6xl mx-auto px-4 py-16 grid md:grid-cols-2 gap-10 items-center">
+          {/* TEXT */}
           <div>
             <h2 className="text-4xl font-bold leading-tight">
               Belajar Lebih Terarah <br />
@@ -429,26 +476,101 @@ export default function Home() {
               memahami materi, dan siap menghadapi ujian.
             </p>
 
-            <div className="mt-6 flex gap-4">
-              <a
-                href="#latihan"
+            <div className="mt-6 flex gap-4 flex-wrap">
+              <Link
+                to="/category"
                 className="bg-white text-blue-600 px-6 py-3 rounded-xl font-semibold hover:bg-sky-100 transition"
               >
                 Mulai Latihan
-              </a>
+              </Link>
+
+              <Link
+                to="/upgrade"
+                className="border border-white/60 text-white px-6 py-3 rounded-xl font-semibold hover:bg-white/10 transition"
+              >
+                Member Premium
+              </Link>
             </div>
           </div>
 
+          {/* SLIDER */}
           <div className="relative">
-            <img
-              src="https://images.unsplash.com/photo-1588072432836-e10032774350?auto=format&fit=crop&w=800&q=80"
-              alt="Belajar Online"
-              className="rounded-2xl shadow-xl"
-            />
+            <a href={heroSlides[currentSlide].link}>
+              <img
+                src={heroSlides[currentSlide].image}
+                alt="Hero Slide"
+                className="
+                  rounded-2xl shadow-xl
+                  transition-opacity duration-700 ease-in-out
+                  opacity-100
+                "
+              />
+            </a>
+
+            {/* INDICATORS */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+              {heroSlides.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setCurrentSlide(i)}
+                  className={`
+                    w-2.5 h-2.5 rounded-full transition
+                    ${i === currentSlide
+                      ? 'bg-white'
+                      : 'bg-white/40 hover:bg-white/70'}
+                  `}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
+      {/* ================= MEMBER VALUE ================= */}
+      <section className="bg-white py-14">
+        <div className="max-w-6xl mx-auto px-4 text-center">
+          <h2 className="text-2xl md:text-3xl font-bold mb-4">
+            Belajar Lebih Terarah dengan Member Premium
+          </h2>
+
+          <p className="text-gray-600 max-w-2xl mx-auto mb-10">
+            Member Premium dirancang untuk siswa yang ingin memahami materi
+            secara menyeluruh dengan latihan terstruktur dan pembahasan lengkap.
+          </p>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="p-6 border rounded-xl bg-gray-50">
+              <h3 className="font-semibold mb-2">Latihan Khusus Member</h3>
+              <p className="text-sm text-gray-600">
+                Akses latihan eksklusif yang tidak tersedia untuk umum.
+              </p>
+            </div>
+
+            <div className="p-6 border rounded-xl bg-gray-50">
+              <h3 className="font-semibold mb-2">Pembahasan Lengkap</h3>
+              <p className="text-sm text-gray-600">
+                Setiap soal dilengkapi pembahasan untuk membantu memahami konsep.
+              </p>
+            </div>
+
+            <div className="p-6 border rounded-xl bg-gray-50">
+              <h3 className="font-semibold mb-2">Progres Belajar</h3>
+              <p className="text-sm text-gray-600">
+                Hasil latihan tersimpan untuk evaluasi belajar yang lebih terarah.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-10">
+            <Link
+              to="/upgrade"
+              className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-lg font-semibold transition"
+            >
+              Pelajari Member Premium
+            </Link>
+          </div>
+        </div>
+      </section>
 
       {/* ================= MAIN ================= */}
       <main className="max-w-6xl mx-auto px-4 py-10 grid md:grid-cols-4 gap-10 flex-1">
@@ -482,28 +604,83 @@ export default function Home() {
                       <h3 className="font-semibold text-blue-600 mb-3">{sub.name}</h3>
 
                       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {exams.map(exam => (
-                          <Link
-                            key={exam.id}
-                            to={`/exam/${exam.id}`}
-                            className="p-5 bg-white rounded-2xl border hover:shadow-lg hover:-translate-y-1 transition"
+                        {exams.map(exam => {
+                          const isMemberOnly = exam.is_member_only
+
+                          return (
+                            <Link
+                              key={exam.id}
+                              to={isMemberOnly ? '/upgrade' : `/exam/${exam.id}`}
+                              className={`
+                                relative p-5 rounded-2xl border transition
+                                hover:shadow-lg hover:-translate-y-1
+                                ${isMemberOnly
+                                  ? 'bg-gradient-to-br from-purple-50 to-white border-purple-300'
+                                  : 'bg-white'}
+                              `}
                             >
-                            <div className="flex items-start gap-3">
-                              <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
+                              {/* BADGE MEMBER */}
+                              {isMemberOnly && (
+                                <div className="
+                                  absolute top-3 right-3
+                                  bg-purple-600 text-white
+                                  text-[10px] font-semibold
+                                  px-2 py-1 rounded-full
+                                  tracking-wide
+                                ">
+                                  KHUSUS MEMBER
+                                </div>
+                              )}
+
+                              {/* ICON */}
+                              <div className={`
+                                w-8 h-8 rounded-full flex items-center justify-center mb-3
+                                ${isMemberOnly
+                                  ? 'bg-purple-100 text-purple-600'
+                                  : 'bg-blue-100 text-blue-600'}
+                              `}>
                                 ✏️
                               </div>
 
-                              <div>
-                                <div className="font-semibold text-gray-800">
-                                  {exam.title}
+                              {/* TITLE */}
+                              <div className="font-semibold text-gray-800 leading-snug">
+                                {exam.title}
+                              </div>
+
+                              {/* SUBTEXT */}
+                              {isMemberOnly ? (
+                                <div className="mt-2 text-sm text-gray-600">
+                                  Latihan eksklusif dengan pembahasan lengkap
                                 </div>
-                                <div className="text-xs text-blue-600 mt-2">
+                              ) : (
+                                <div className="mt-2 text-xs text-blue-600">
                                   Kerjakan Sekarang →
                                 </div>
-                              </div>
-                            </div>
-                          </Link>
-                        ))}
+                              )}
+
+                              {/* CTA MEMBER */}
+                              {isMemberOnly && (
+                                <div className="
+                                  mt-4 inline-flex items-center gap-1
+                                  text-sm font-medium text-purple-700
+                                ">
+                                  🔓 Akses dengan Member Premium →
+                                </div>
+                              )}
+
+                              {isMemberOnly && (
+                                <div
+                                  className="
+                                    absolute inset-0
+                                    rounded-2xl
+                                    bg-purple-500/5
+                                    pointer-events-none
+                                  "
+                                />
+                              )}
+                            </Link>
+                          )
+                        })}
                       </div>
                     </div>
                   )
@@ -614,9 +791,10 @@ export default function Home() {
             <h4 className="font-semibold text-white mb-2">Kontak</h4>
             <p className="text-sm">Email: lesson.idn@gmail.com</p>
             <p className="text-sm">Whatsapp: 0851 2222 9986</p>
+            <p className="mt-6 mb-2 text-sm">Surakarta 57127, Jawa Tengah, Indonesia</p>
 
             {/* Tambahkan margin agar tidak mepet */}
-            <h4 className="font-semibold text-white mt-6 mb-2">Sosial Media</h4>
+            <h4 className="font-semibold text-white mt-6 mb-2">Ikuti Kami</h4>
 
             {/* SOCIAL ICONS */}
             {socialLinks.length > 0 && (

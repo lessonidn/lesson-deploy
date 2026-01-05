@@ -10,6 +10,7 @@ import SubCategories from '../pages/SubCategories'
 import ExamSets from '../pages/ExamSets'
 import Questions from '../pages/Questions'
 import Choices from '../pages/Choices'
+import InviteMember from '../pages/InviteMember'
 
 import MenuManagerLayout from '../pages/menu-manager/MenuManagerLayout'
 import Menus from '../pages/menu-manager/Menus'
@@ -37,6 +38,7 @@ export const adminRoutes: RouteObject[] = [
           { path: 'exam-sets', element: <ExamSets /> },
           { path: 'questions', element: <Questions /> },
           { path: 'choices', element: <Choices /> },
+          { path: 'invite-member', element: <InviteMember /> },
 
           {
             path: 'menu-manager',
