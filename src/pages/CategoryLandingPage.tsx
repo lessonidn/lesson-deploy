@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../hooks/useAuth'
 import logo from '../../public/leaf.png'
 import { Helmet } from 'react-helmet-async'
 import {
@@ -33,6 +34,7 @@ type ExamSet = {
   id: string
   title: string
   sub_category_id: string
+  is_member_only: boolean
 }
 
 type Page = {
@@ -113,6 +115,22 @@ export default function CategoryLandingPage() {
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([])
+  const [scrolled, setScrolled] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const { session, profile, logout } = useAuth()
+
+  const isMemberActive = profile?.membership_status === 'active'
+
+
+
+  // Header scroll effect
+    useEffect(() => {
+      const onScroll = () => {
+        setScrolled(window.scrollY > 20)
+      }
+      window.addEventListener('scroll', onScroll)
+      return () => window.removeEventListener('scroll', onScroll)
+    }, [])
 
   useEffect(() => {
     if (!slug) return
@@ -157,18 +175,19 @@ export default function CategoryLandingPage() {
     ] = await Promise.all([
       supabase
         .from('exam_sets')
-        .select('id, title, sub_category_id')
+        .select('id, title, sub_category_id, is_member_only')
         .in('sub_category_id', subIds)
         .eq('is_published', true)
         .eq('is_deleted', false),
+        
 
       supabase
         .from('exam_sets')
-        .select('id, title, sub_category_id')
+        .select('id, title, sub_category_id, is_member_only')
         .eq('is_published', true)
         .eq('is_deleted', false)
         .order('created_at', { ascending: false })
-        .limit(10),
+        .limit(5),
 
       supabase
         .from('menus')
@@ -315,7 +334,15 @@ export default function CategoryLandingPage() {
       </Helmet>
 
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        <header className="relative z-50">
+        <header
+          className={`
+            fixed top-0 left-0 w-full z-50
+            transition-all duration-300
+            ${scrolled
+              ? 'backdrop-blur-md bg-black/70 shadow-lg'
+              : 'bg-transparent'}
+          `}
+        >
           {/* Background */}
           <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-black" />
 
@@ -355,7 +382,7 @@ export default function CategoryLandingPage() {
             <div className="flex items-center gap-6">
               <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
                 {headerMenus.map(menu => (
-                  <div key={menu.id} className="relative group z-50 pb-3">
+                  <div key={menu.id} className="relative group z-50">
                     {/* Parent menu: pakai button kalau hanya pemicu dropdown */}
                     {menu.children?.length ? (
                       <button
@@ -409,6 +436,79 @@ export default function CategoryLandingPage() {
                 ))}
               </nav>
 
+              {/* CTA / ACCOUNT */}
+              <div className="hidden md:flex items-center gap-3 relative">
+                {!session && (
+                  <>
+                    <Link
+                      to="/login"
+                      className="bg-sky-500 hover:bg-sky-400 text-white px-4 py-2 rounded-lg text-sm font-semibold transition"
+                    >
+                      Member Area
+                    </Link>
+                  </>
+                )}
+
+                {session && profile && (
+                  <div className="relative group">
+                    <button
+                      className="
+                        flex items-center gap-2
+                        bg-black/40 backdrop-blur
+                        border border-white/20
+                        px-3 py-2 rounded-lg
+                        text-sm font-medium
+                        hover:border-sky-400
+                        transition
+                      "
+                    >
+                      👤 {profile.full_name ?? 'Member'}
+                    </button>
+
+                    {/* Invisible hover bridge */}
+                    <div className="absolute top-full left-0 w-full h-2 bg-transparent" />
+
+                    <div
+                      className="
+                        absolute right-0 mt-2 w-48
+                        bg-black/80 backdrop-blur-md
+                        border border-white/10
+                        rounded-lg shadow-xl
+                        hidden group-hover:block group-focus-within:block
+                        overflow-hidden
+                        z-50
+                      "
+                    >
+                      <Link
+                        to="/mydashboard"
+                        className="block px-4 py-2 text-sm hover:bg-white/10"
+                      >
+                        Dashboard
+                      </Link>
+
+                      {profile.membership_status !== 'active' && (
+                        <Link
+                          to="/upgrade"
+                          className="block px-4 py-2 text-sm hover:bg-white/10 text-sky-400"
+                        >
+                          Upgrade Member
+                        </Link>
+                      )}
+
+                      <button
+                        onClick={async () => {
+                          await logout()
+                          window.location.href = '/'
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm hover:bg-white/10 text-red-400"
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="relative">
                 <input
                   value={search}
@@ -424,13 +524,45 @@ export default function CategoryLandingPage() {
                     ✕
                   </button>
                 )}
+                <button
+                  onClick={() => setMobileOpen(true)}
+                  className="md:hidden text-white text-2xl"
+                >
+                  ☰
+                </button>
               </div>
             </div>
           </div>
         </header>
+        
+        {mobileOpen && (
+          <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm">
+            <div className="absolute right-0 top-0 h-full w-72 bg-gray-900 p-6 shadow-xl">
+              <button
+                onClick={() => setMobileOpen(false)}
+                className="text-white text-xl mb-6"
+              >
+                ✕
+              </button>
+
+              <nav className="space-y-4">
+                {headerMenus.map(menu => (
+                  <Link
+                    key={menu.id}
+                    to={menu.url || '#'}
+                    onClick={() => setMobileOpen(false)}
+                    className="block text-white text-lg hover:text-sky-400"
+                  >
+                    {menu.label}
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          </div>
+        )}
 
         {/* CONTENT */}
-        <main className="max-w-6xl mx-auto px-4 py-8 grid md:grid-cols-4 gap-10 flex-1">
+        <main className="max-w-6xl mx-auto px-4 py-10 pt-24 grid md:grid-cols-4 gap-10 flex-1">
           <div className="md:col-span-3 space-y-10">
             <h1 className="text-3xl font-bold mb-2">{category.name}</h1>
 
@@ -450,29 +582,98 @@ export default function CategoryLandingPage() {
                     {sub.name}
                   </h2>
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {exams.map(exam => (
-            <Link
+                    {exams.map(exam => {
+                      const isMemberOnly = exam.is_member_only
+                      const isLocked = isMemberOnly && !isMemberActive
+
+                      // Exam publik → selalu bisa diakses
+                      if (!isMemberOnly) {
+                        return (
+                          <Link
                             key={exam.id}
                             to={`/exam/${exam.id}`}
-                            className="p-5 bg-white rounded-2xl border hover:shadow-lg hover:-translate-y-1 transition"
+                            className="
+                              relative p-5 rounded-2xl border
+                              transition hover:shadow-lg hover:-translate-y-1
+                              bg-white
+                            "
                           >
-                            <div className="flex items-start gap-3">
-                              <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
-                                ✏️
-                              </div>
-
-                              <div>
-                                <div className="font-semibold text-gray-800">
-                                  {exam.title}
-                                </div>
-                                <div className="text-xs text-blue-600 mt-2">
-                                  Kerjakan Sekarang →
-                                </div>
-                              </div>
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center mb-3 bg-blue-100 text-blue-600">
+                              ✏️
+                            </div>
+                            <div className="font-semibold text-gray-800 leading-snug">
+                              {exam.title}
+                            </div>
+                            <div className="mt-2 text-xs text-blue-600">
+                              Kerjakan Sekarang →
                             </div>
                           </Link>
-                    ))}
+                        )
+                      }
+
+                      // Exam member-only tapi user belum aktif → teaser yang bisa diklik ke /upgrade
+                      if (isLocked) {
+                        return (
+                          <Link
+                            key={exam.id}
+                            to="/upgrade"
+                            className="
+                              relative p-5 rounded-2xl border
+                              transition hover:shadow-lg hover:-translate-y-1
+                              bg-gradient-to-br from-purple-50 to-white border-purple-300
+                            "
+                          >
+                            <div className="absolute top-3 right-3 bg-purple-600 text-white text-[10px] font-semibold px-2 py-1 rounded-full tracking-wide">
+                              KHUSUS MEMBER
+                            </div>
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center mb-3 bg-purple-100 text-purple-600">
+                              ✏️
+                            </div>
+                            <div className="font-semibold text-gray-800 leading-snug">
+                              {exam.title}
+                            </div>
+                            <div className="mt-2 text-sm text-gray-600">
+                              Latihan eksklusif dengan pembahasan lengkap
+                            </div>
+                            <div className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-purple-700">
+                              🔒 Login / Upgrade untuk akses penuh →
+                            </div>
+                            <div className="absolute inset-0 rounded-2xl bg-purple-500/5 pointer-events-none" />
+                          </Link>
+                        )
+                      }
+
+                      // Exam member-only → member aktif dapat Link penuh
+                      return (
+                        <Link
+                          key={exam.id}
+                          to={`/exam/${exam.id}`}
+                          className="
+                            relative p-5 rounded-2xl border
+                            transition hover:shadow-lg hover:-translate-y-1
+                            bg-gradient-to-br from-purple-50 to-white border-purple-300
+                          "
+                        >
+                          <div className="absolute top-3 right-3 bg-purple-600 text-white text-[10px] font-semibold px-2 py-1 rounded-full tracking-wide">
+                            KHUSUS MEMBER
+                          </div>
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center mb-3 bg-purple-100 text-purple-600">
+                            ✏️
+                          </div>
+                          <div className="font-semibold text-gray-800 leading-snug">
+                            {exam.title}
+                          </div>
+                          <div className="mt-2 text-sm text-gray-600">
+                            Latihan eksklusif dengan pembahasan lengkap
+                          </div>
+                          <div className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-green-700">
+                            ✅ Akses terbuka untuk Member
+                          </div>
+                        </Link>
+                      )
+                    })}
                   </div>
+
                 </section>
               )
             })}

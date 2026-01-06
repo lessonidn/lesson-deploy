@@ -23,6 +23,15 @@ import MediaPickerModal from '../components/media/MediaPickerModal'
 type ExamSet = {
   id: string
   title: string
+  sub_category_id: string
+  duration_minutes: number
+  is_published: boolean
+  is_member_only: boolean
+  sub_categories?: {
+    id: string
+    name: string        // contoh: KELAS 5
+    categories?: { id: string; name: string } // contoh: MATEMATIKA
+  }
 }
 
 type Question = {
@@ -211,8 +220,6 @@ export default function Questions() {
           onChange={e => {
             const newSetId = e.target.value
             setSetId(newSetId)
-
-            // ✅ kalau sedang edit, jangan clear editor (biar bisa pindah soal ke lembar lain)
             if (!editId) {
               setText('')
               editor?.commands.setContent(`<p></p><p></p><p><br></p><p><br></p>`)
@@ -223,6 +230,8 @@ export default function Questions() {
           {sets.map(s => (
             <option key={s.id} value={s.id}>
               {s.title}
+              {s.sub_categories?.name ? ` -- ${s.sub_categories.name}` : ''}
+              {s.sub_categories?.categories?.name ? ` -- ${s.sub_categories.categories.name}` : ''}
             </option>
           ))}
         </select>

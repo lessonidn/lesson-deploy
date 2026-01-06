@@ -11,6 +11,9 @@ import SitemapPage from "../pages/SitemapPage"
 import AboutPage from "../pages/AboutPage"
 import DonationPage from "../pages/DonationPage"
 import UpgradeMember from "../pages/UpgradeMember"
+import InviteRegister from "../pages/InviteRegister"
+import LoginMember from '../pages/LoginMember'
+import MemberDashboard from "../pages/MemberDashboard"
 
 export const userRoutes: RouteObject[] = [
   { path: '/', element: <Home /> },
@@ -25,4 +28,7 @@ export const userRoutes: RouteObject[] = [
   { path: "/tentang-kami", element: <AboutPage /> },
   { path: "/donasi", element: <DonationPage /> },
   { path: "/upgrade", element: <UpgradeMember /> },
+  { path: "/invite/:token", element: <InviteRegister /> },
+  { path: '/login', element: <LoginMember /> },
+  { path: "/mydashboard", element: <MemberDashboard /> },
 ]

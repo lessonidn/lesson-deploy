@@ -161,8 +161,123 @@ export async function softDeleteSubCategory(id: string) {
 /* =========================
    3. Exam Sets
    ========================= */
-export async function getExamSets(subCategoryId?: string) {
-  let query = supabase
+  export async function getExamSets(subCategoryId?: string) {
+    let query = supabase
+      .from('exam_sets')
+      .select(`
+        id,
+        title,
+        sub_category_id,
+        duration_minutes,
+        is_published,
+        is_member_only,
+        sub_categories (
+          id,
+          name,
+          categories ( id, name )
+        )
+      `)
+      .eq('is_deleted', false)
+      .order('title')
+
+    if (subCategoryId) query = query.eq('sub_category_id', subCategoryId)
+
+    const { data, error } = await query
+    if (error) return { data: null, error }
+
+    // ✅ tipe data
+    type Category = {
+      id: string
+      name: string
+    }
+
+    type SubCategory = {
+      id: string
+      name: string
+      categories?: Category | Category[] | null
+    }
+
+    type QuizRecord = {
+      id: string
+      title: string
+      sub_category_id: string
+      duration_minutes: number
+      is_published: boolean
+      is_member_only: boolean
+      sub_categories?: SubCategory | SubCategory[]
+    }
+
+    // ✅ normalisasi dengan tipe QuizRecord
+    const normalized = (data ?? []).map((r: QuizRecord) => {
+      const sc = Array.isArray(r.sub_categories) ? r.sub_categories[0] : r.sub_categories
+      const cat: Category | undefined =
+        sc && Array.isArray(sc.categories) ? sc.categories[0] : sc?.categories as Category | undefined
+
+      return {
+        id: r.id,
+        title: r.title,
+        sub_category_id: r.sub_category_id,
+        duration_minutes: r.duration_minutes,
+        is_published: r.is_published,
+        is_member_only: r.is_member_only,
+        sub_categories: sc
+          ? {
+              id: sc.id,
+              name: sc.name,
+              categories: cat ? { id: cat.id, name: cat.name } : undefined,
+            }
+          : undefined,
+      }
+    })
+
+    return { data: normalized, error: null }
+  }
+
+  export async function createExamSet(payload: {
+    title: string
+    sub_category_id: string
+    duration_minutes?: number
+    is_member_only?: boolean
+  }) {
+    return supabase.from('exam_sets').insert([
+      {
+        title: payload.title,
+        sub_category_id: payload.sub_category_id,
+        duration_minutes: payload.duration_minutes ?? 30,
+        is_deleted: false,
+        is_published: false,
+        is_member_only: payload.is_member_only ?? false, // ✅ default false, bisa override
+      },
+    ])
+  }
+
+  export type UpdateExamSetPayload = {
+    title?: string
+    sub_category_id?: string
+    duration_minutes?: number
+    is_member_only?: boolean // ✅ resmi
+    is_published?: boolean   // ✅ tambahkan agar bisa toggle publish
+  }
+
+  export async function updateExamSet(
+    id: string,
+    payload: UpdateExamSetPayload
+  ) {
+    return supabase
+      .from('exam_sets')
+      .update(payload)
+      .eq('id', id)
+  }
+
+  export async function softDeleteExamSet(id: string) {
+    return supabase
+      .from('exam_sets')
+      .update({ is_deleted: true })
+      .eq('id', id)
+  }
+
+export async function getAdminExamSets() {
+  return supabase
     .from('exam_sets')
     .select(`
       id,
@@ -171,65 +286,20 @@ export async function getExamSets(subCategoryId?: string) {
       duration_minutes,
       is_published,
       is_member_only,
+      is_deleted,
       sub_categories (
         id,
         name,
-        categories:categories!sub_categories_category_id_fkey (
+        categories (
           id,
           name
         )
       )
     `)
     .eq('is_deleted', false)
-    .order('title')
-
-  if (subCategoryId) {
-    query = query.eq('sub_category_id', subCategoryId)
-  }
-
-  return query
+    .order('created_at', { ascending: false })
 }
 
-export async function createExamSet(payload: {
-  title: string
-  sub_category_id: string
-  duration_minutes?: number
-}) {
-  return supabase.from('exam_sets').insert([
-    {
-      title: payload.title,
-      sub_category_id: payload.sub_category_id,
-      duration_minutes: payload.duration_minutes ?? 30,
-      is_deleted: false,
-      is_published: false,
-      is_member_only: false, // ✅ TEGAS
-    },
-  ])
-}
-
-export type UpdateExamSetPayload = {
-  title?: string
-  sub_category_id?: string
-  duration_minutes?: number
-  is_member_only?: boolean   // ✅ TAMBAH RESMI
-}
-
-export async function updateExamSet(
-  id: string,
-  payload: UpdateExamSetPayload
-) {
-  return supabase
-    .from('exam_sets')
-    .update(payload)
-    .eq('id', id)
-}
-
-export async function softDeleteExamSet(id: string) {
-  return supabase
-    .from('exam_sets')
-    .update({ is_deleted: true })
-    .eq('id', id)
-}
 
 /* =========================
    4. Questions

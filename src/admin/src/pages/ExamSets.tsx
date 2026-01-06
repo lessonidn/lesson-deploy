@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { FaRegClock } from 'react-icons/fa'
 import {
   getSubCategories,
-  getExamSets,
+  getAdminExamSets,
   createExamSet,
   updateExamSet,
   softDeleteExamSet,
@@ -46,7 +46,7 @@ export default function ExamSets() {
 
   async function load() {
     const { data: subsData, error: subsError } = await getSubCategories()
-    const { data: examData, error: examError } = await getExamSets()
+    const { data: examData, error: examError } = await getAdminExamSets()
 
     if (subsError || examError) {
       setError(subsError?.message || examError?.message || 'Gagal memuat data')
@@ -227,19 +227,19 @@ export default function ExamSets() {
             <li key={i.id} className="p-4 flex justify-between items-center hover:bg-yellow-300 transition-colors">
               <div>
                 <div className="font-medium flex items-center gap-2 flex-wrap">
-                  {i.title}
+                  {i.title} 
+                  {i.sub_categories?.name ? ` -- ${i.sub_categories?.name}` : ''}
+                  {i.sub_categories?.categories?.name ? ` -- ${i.sub_categories?.categories?.name}` : ''}
 
-                  {/* LABEL MEMBER */}
-                  { i.is_member_only && (
+                  {i.is_member_only && (
                     <span
-                      title="Exam ini hanya bisa diakses oleh member (berbayar & undangan)"
+                      title="Exam ini hanya bisa diakses oleh member"
                       className="text-xs px-2 py-0.5 rounded bg-purple-100 text-purple-700 cursor-help"
                     >
                       Khusus Member
                     </span>
                   )}
 
-                  {/* LABEL PUBLISH */}
                   {i.is_published ? (
                     <span className="text-xs px-2 py-0.5 rounded bg-green-100 text-green-700">
                       Published
@@ -251,7 +251,7 @@ export default function ExamSets() {
                   )}
                 </div>
                 <div className="text-sm text-gray-500">
-                  {i.sub_categories?.name} -- {i.sub_categories?.categories?.name} · ⏱ {i.duration_minutes} menit
+                  ⏱ {i.duration_minutes} menit
                 </div>
               </div>
 

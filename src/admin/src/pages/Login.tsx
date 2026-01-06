@@ -60,9 +60,16 @@ export default function AdminLogin() {
           className="border p-2 w-full rounded"
           value={password}
           onChange={e => setPassword(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              login(e as unknown as React.FormEvent)
+            }
+          }}
         />
 
         <button
+          type="submit" // ✅ penting supaya tombol submit form
           disabled={loading}
           className="w-full bg-blue-600 text-white py-2 rounded"
         >

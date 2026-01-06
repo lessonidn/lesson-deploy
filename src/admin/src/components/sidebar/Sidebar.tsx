@@ -13,6 +13,7 @@ const menus = [
   { to: '/admin/menu-manager', label: 'Menu Manager' },
 
   { to: '/admin/invite-member', label: 'Invite Member' },
+  { to: '/admin/member', label: 'Daftar Member' },
 ]
 
 type SidebarProps = {

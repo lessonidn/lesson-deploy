@@ -7,6 +7,8 @@ export default function InviteMember() {
   const [inviteLink, setInviteLink] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [copied, setCopied] = useState(false)
+
 
   const handleGenerate = async () => {
     setError(null)
@@ -74,12 +76,26 @@ export default function InviteMember() {
 
       {inviteLink && (
         <div className="mt-4 p-3 bg-gray-100 rounded">
-          <p className="text-sm mb-1">Link Invite:</p>
-          <code className="block break-all text-sm">
-            {inviteLink}
-          </code>
+            <p className="text-sm mb-2 font-medium">Link Invite:</p>
+
+            <div className="flex items-center gap-2">
+            <code className="flex-1 break-all text-sm bg-white border px-3 py-2 rounded">
+                {inviteLink}
+            </code>
+
+            <button
+                onClick={() => {
+                    navigator.clipboard.writeText(inviteLink)
+                    setCopied(true)
+                    setTimeout(() => setCopied(false), 1500)
+                }}
+                className="px-3 py-2 text-sm bg-indigo-600 text-white rounded"
+                >
+                {copied ? '✓' : '📋'}
+                </button>
+            </div>
         </div>
-      )}
+        )}
 
       {error && (
         <p className="text-red-500 mt-3">{error}</p>

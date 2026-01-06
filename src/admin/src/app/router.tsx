@@ -11,6 +11,7 @@ import ExamSets from '../pages/ExamSets'
 import Questions from '../pages/Questions'
 import Choices from '../pages/Choices'
 import InviteMember from '../pages/InviteMember'
+import Member from '../pages/Members'
 
 import MenuManagerLayout from '../pages/menu-manager/MenuManagerLayout'
 import Menus from '../pages/menu-manager/Menus'
@@ -39,6 +40,7 @@ export const adminRoutes: RouteObject[] = [
           { path: 'questions', element: <Questions /> },
           { path: 'choices', element: <Choices /> },
           { path: 'invite-member', element: <InviteMember /> },
+          { path: 'member', element: <Member /> },
 
           {
             path: 'menu-manager',
@@ -56,4 +58,8 @@ export const adminRoutes: RouteObject[] = [
       },
     ],
   },
+
+  // 🌐 ROOT & FALLBACK
+  { path: '/', element: <AdminLogin /> }, // redirect root ke login
+  { path: '*', element: <h1>404 Not Found</h1> },
 ]

@@ -22,6 +22,15 @@ import ResizableImage from '../lib/ResizableImage'
 type ExamSet = {
   id: string
   title: string
+  sub_category_id: string
+  duration_minutes?: number
+  is_published?: boolean
+  is_member_only?: boolean
+  sub_categories?: {
+    id: string
+    name: string        // contoh: KELAS 5
+    categories?: { id: string; name: string } // contoh: MATEMATIKA
+  }
 }
 
 type Question = {
@@ -226,6 +235,8 @@ function cleanHtmlTail(html: string) {
         {examSets.map(ex => (
           <option key={ex.id} value={ex.id}>
             {ex.title}
+            {ex.sub_categories?.name ? ` -- ${ex.sub_categories.name}` : ''}
+            {ex.sub_categories?.categories?.name ? ` -- ${ex.sub_categories.categories.name}` : ''}
           </option>
         ))}
       </select>

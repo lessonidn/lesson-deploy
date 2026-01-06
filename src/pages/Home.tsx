@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../hooks/useAuth'
 import logo from '../asset/leaf.png'
 import {
   Facebook,
@@ -33,6 +34,13 @@ type ExamSet = {
   sub_category_id: string
   created_at: string
   is_member_only: boolean   // ✅ TAMBAH
+}
+
+type ExamTeaser = {
+  id: string
+  sub_category_id: string
+  title: string
+  // tambahkan field lain sesuai struktur datanya
 }
 
 type Page = {
@@ -128,6 +136,10 @@ export default function Home() {
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([])
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const { session, profile, logout } = useAuth()
+  const [examTeasers, setExamTeasers] = useState<ExamTeaser[]>([])
+
+  const isMemberActive = profile?.membership_status === 'active'
 
   /* ===== HERO SLIDER STATE (WAJIB DI SINI) ===== */
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -168,23 +180,24 @@ export default function Home() {
       { data: menus },
       { data: pages },
       { data: socialLinks },
+      { data: teasers },   // ✅ TAMBAH
     ] = await Promise.all([
       supabase
         .from('categories')
-        .select('id, name, slug, is_published')   // ✅ tambahkan slug
+        .select('id, name, slug, is_published')
         .eq('is_published', true)
         .order('order_index'),
 
       supabase
         .from('sub_categories')
-        .select('id, name, slug, category_id')    // ✅ tambahkan slug
+        .select('id, name, slug, category_id')
         .order('name'),
 
       supabase
         .from('exam_sets')
         .select('id, title, sub_category_id, created_at, is_member_only')
         .eq('is_published', true)
-        .eq('is_deleted', false),
+        .eq('is_deleted', false),   // ❌ hapus filter is_member_only di sini
 
       supabase
         .from('exam_sets')
@@ -192,7 +205,7 @@ export default function Home() {
         .eq('is_published', true)
         .eq('is_deleted', false)
         .order('created_at', { ascending: false })
-        .limit(10),
+        .limit(5),
 
       supabase
         .from('menus')
@@ -212,6 +225,11 @@ export default function Home() {
         .select('*')
         .eq('is_active', true)
         .order('order_index'),
+
+      supabase
+      .from('exam_teasers')   // ✅ nama tabel plural sesuai schema
+      .select('id, title, sub_category_id, is_member_only')   // ✅ pakai kolom yang ada
+      .order('id', { ascending: false }),   // ✅ order by id saja
     ])
 
     if (!cats || !subs || !exams || !menus) {
@@ -226,6 +244,7 @@ export default function Home() {
     setLatestExams(latest || [])
     setLatestPages(pages || [])
     setSocialLinks(socialLinks || [])
+    setExamTeasers(teasers || [])   // ✅ TAMBAH
 
     /* ===== RESOLVE AUTO MENU ===== */
 
@@ -400,14 +419,60 @@ export default function Home() {
               ))}
             </nav>
 
-            {/* CTA MEMBER */}
-            <div className="hidden md:flex items-center gap-3">
-              <Link
-                to="/admin/login"
-                className="bg-sky-500 hover:bg-sky-400 text-black px-4 py-2 rounded-lg text-sm font-semibold transition"
-              >
-                Masuk Member
-              </Link>
+            {/* CTA / ACCOUNT */}
+            <div className="hidden md:flex items-center gap-3 relative">
+              {!session && !profile && (
+                <Link
+                  to="/login"
+                  className="bg-sky-500 hover:bg-sky-400 text-white px-4 py-2 rounded-lg text-sm font-semibold transition"
+                >
+                  Member Area
+                </Link>
+              )}
+
+              {session && profile && (
+                <div className="relative group">
+                  <button
+                    className="
+                      flex items-center gap-2
+                      bg-black/40 backdrop-blur
+                      border border-white/20
+                      px-3 py-2 rounded-lg
+                      text-sm font-medium
+                      hover:border-sky-400
+                      transition
+                    "
+                  >
+                    👤 {profile.full_name ?? 'Member'}
+                  </button>
+
+                  {/* Tambah invisible hover area */}
+                  <div className="absolute top-full left-0 w-full h-2 bg-transparent"></div>
+
+                  <div
+                    className="
+                      absolute right-0 mt-2 w-48
+                      bg-black/80 backdrop-blur-md
+                      border border-white/10
+                      rounded-lg shadow-xl
+                      hidden group-hover:block group-focus-within:block
+                      overflow-hidden
+                      z-50
+                    "
+                  >
+                    <Link to="/mydashboard" className="block px-4 py-2 text-sm hover:bg-white/10">
+                      Dashboard
+                    </Link>
+                    
+                    <button
+                      onClick={logout}
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-white/10 text-red-400"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="relative">
@@ -597,91 +662,98 @@ export default function Home() {
 
                 {catSubs.map(sub => {
                   const exams = filteredExams.filter(e => e.sub_category_id === sub.id)
-                  if (!exams.length) return null
+                  const teasers = examTeasers.filter(t => t.sub_category_id === sub.id)
+
+                  if (!exams.length && !teasers.length) return null
 
                   return (
                     <div key={sub.id} className="mb-6">
                       <h3 className="font-semibold text-blue-600 mb-3">{sub.name}</h3>
 
-                      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {exams.map(exam => {
-                          const isMemberOnly = exam.is_member_only
+                     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {exams.map(exam => {
+                        const isMemberOnly = exam.is_member_only
+                        const isLocked = isMemberOnly && !isMemberActive
 
+                        // Publik exam (selalu bisa diakses)
+                        if (!isMemberOnly) {
                           return (
                             <Link
                               key={exam.id}
-                              to={isMemberOnly ? '/upgrade' : `/exam/${exam.id}`}
-                              className={`
-                                relative p-5 rounded-2xl border transition
-                                hover:shadow-lg hover:-translate-y-1
-                                ${isMemberOnly
-                                  ? 'bg-gradient-to-br from-purple-50 to-white border-purple-300'
-                                  : 'bg-white'}
-                              `}
+                              to={`/exam/${exam.id}`}
+                              className="relative p-5 rounded-2xl border transition hover:shadow-lg hover:-translate-y-1 bg-white"
                             >
-                              {/* BADGE MEMBER */}
-                              {isMemberOnly && (
-                                <div className="
-                                  absolute top-3 right-3
-                                  bg-purple-600 text-white
-                                  text-[10px] font-semibold
-                                  px-2 py-1 rounded-full
-                                  tracking-wide
-                                ">
-                                  KHUSUS MEMBER
-                                </div>
-                              )}
-
-                              {/* ICON */}
-                              <div className={`
-                                w-8 h-8 rounded-full flex items-center justify-center mb-3
-                                ${isMemberOnly
-                                  ? 'bg-purple-100 text-purple-600'
-                                  : 'bg-blue-100 text-blue-600'}
-                              `}>
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center mb-3 bg-blue-100 text-blue-600">
                                 ✏️
                               </div>
-
-                              {/* TITLE */}
                               <div className="font-semibold text-gray-800 leading-snug">
                                 {exam.title}
                               </div>
-
-                              {/* SUBTEXT */}
-                              {isMemberOnly ? (
-                                <div className="mt-2 text-sm text-gray-600">
-                                  Latihan eksklusif dengan pembahasan lengkap
-                                </div>
-                              ) : (
-                                <div className="mt-2 text-xs text-blue-600">
-                                  Kerjakan Sekarang →
-                                </div>
-                              )}
-
-                              {/* CTA MEMBER */}
-                              {isMemberOnly && (
-                                <div className="
-                                  mt-4 inline-flex items-center gap-1
-                                  text-sm font-medium text-purple-700
-                                ">
-                                  🔓 Akses dengan Member Premium →
-                                </div>
-                              )}
-
-                              {isMemberOnly && (
-                                <div
-                                  className="
-                                    absolute inset-0
-                                    rounded-2xl
-                                    bg-purple-500/5
-                                    pointer-events-none
-                                  "
-                                />
-                              )}
+                              <div className="mt-2 text-xs text-blue-600">
+                                Kerjakan Sekarang →
+                              </div>
                             </Link>
                           )
-                        })}
-                      </div>
+                        }
+
+                        // Exam member-only tapi user belum aktif → teaser yang bisa diklik ke /upgrade
+                        if (isLocked) {
+                          return (
+                            <Link
+                              key={exam.id}
+                              to="/upgrade"
+                              className="
+                                relative p-5 rounded-2xl border
+                                transition hover:shadow-lg hover:-translate-y-1
+                                bg-gradient-to-br from-purple-50 to-white border-purple-300
+                              "
+                            >
+                              <div className="absolute top-3 right-3 bg-purple-600 text-white text-[10px] font-semibold px-2 py-1 rounded-full tracking-wide">
+                                KHUSUS MEMBER
+                              </div>
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center mb-3 bg-purple-100 text-purple-600">
+                                ✏️
+                              </div>
+                              <div className="font-semibold text-gray-800 leading-snug">
+                                {exam.title}
+                              </div>
+                              <div className="mt-2 text-sm text-gray-600">
+                                Latihan eksklusif dengan pembahasan lengkap
+                              </div>
+                              <div className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-purple-700">
+                                🔒 Login / Upgrade untuk akses penuh →
+                              </div>
+                              <div className="absolute inset-0 rounded-2xl bg-purple-500/5 pointer-events-none" />
+                            </Link>
+                          )
+                        }
+
+                        // Exam member-only tapi user aktif
+                        return (
+                          <Link
+                            key={exam.id}
+                            to={`/exam/${exam.id}`}
+                            className="relative p-5 rounded-2xl border transition hover:shadow-lg hover:-translate-y-1 bg-gradient-to-br from-purple-50 to-white border-purple-300"
+                          >
+                            <div className="absolute top-3 right-3 bg-purple-600 text-white text-[10px] font-semibold px-2 py-1 rounded-full tracking-wide">
+                              KHUSUS MEMBER
+                            </div>
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center mb-3 bg-purple-100 text-purple-600">
+                              ✏️
+                            </div>
+                            <div className="font-semibold text-gray-800 leading-snug">
+                              {exam.title}
+                            </div>
+                            <div className="mt-2 text-sm text-gray-600">
+                              Latihan eksklusif dengan pembahasan lengkap
+                            </div>
+                            <div className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-green-700">
+                              ✅ Akses terbuka untuk Member
+                            </div>
+                          </Link>
+                        )
+                      })}
+                    </div>
                     </div>
                   )
                 })}

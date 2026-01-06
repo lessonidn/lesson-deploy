@@ -18,9 +18,17 @@ export default defineConfig({
       },
     },
     // opsional: naikkan limit warning biar log lebih bersih
-    chunkSizeWarningLimit: 1500, // naikkan limit ke 1.5 MB
+    chunkSizeWarningLimit: 1500,
   },
   server: {
     port: 5173,
+    // ✅ fallback supaya route React tidak 404 saat preview
+    fs: {
+      strict: true,
+    },
+  },
+  preview: {
+    port: 4173,
+    strictPort: true,
   },
 })
