@@ -14,11 +14,7 @@ export default function AdminLogin() {
     setLoading(true)
     setError(null)
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
       setError(error.message)
       setLoading(false)
@@ -32,6 +28,10 @@ export default function AdminLogin() {
       setLoading(false)
       return
     }
+
+    // Debug: cek JWT
+    console.log('JWT:', data.session?.access_token)
+    console.log('User:', data.session?.user)
 
     navigate('/admin')
   }

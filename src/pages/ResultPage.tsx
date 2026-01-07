@@ -3,6 +3,10 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import 'katex/dist/katex.min.css'
 import katex from 'katex'
+import type { User } from '@supabase/supabase-js'
+
+
+/* ================= TYPES ================= */
 
 type Attempt = {
   id: string
@@ -27,14 +31,28 @@ type Question = {
   userChoiceId: string | null
 }
 
+
+
+/* ================= COMPONENT ================= */
+
 export default function ResultPage() {
   const { attemptId } = useParams()
   const [attempt, setAttempt] = useState<Attempt | null>(null)
   const [questions, setQuestions] = useState<Question[]>([])
   const [loading, setLoading] = useState(true)
+  
+  const [rating, setRating] = useState<number>(0)
+  const [comment, setComment] = useState('')
+  const [user, setUser] = useState<User | null>(null)
+
+ /* === CEK LOGIN GMAIL KOMENTAR ==== */
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user)
+    })
+  }, [])
 
   const loadResult = useCallback(async () => {
-    // 1️⃣ ambil attempt dasar
     const { data: attemptData } = await supabase
       .from('quiz_attempts')
       .select('*')
@@ -43,7 +61,6 @@ export default function ResultPage() {
 
     if (!attemptData) return
 
-    // 2️⃣ ambil jawaban + soal + pilihan
     const { data: answers } = await supabase
       .from('quiz_answers')
       .select(`
@@ -62,10 +79,8 @@ export default function ResultPage() {
       `)
       .eq('quiz_attempt_id', attemptId)
 
-    // 3️⃣ normalisasi data
     const mapped =
       (answers?.map(a => {
-        // pastikan questions bisa array atau object
         const q = Array.isArray(a.questions) ? a.questions[0] : a.questions
         if (!q) return null
         return {
@@ -73,19 +88,16 @@ export default function ResultPage() {
           text: q.text,
           points: q.points,
           choices: q.choices,
-          userChoiceId: String(a.choice_id), // pastikan string
+          userChoiceId: String(a.choice_id),
         } as Question
       }).filter((q): q is Question => q !== null)) || []
 
     setQuestions(mapped)
 
-    // 4️⃣ hitung skor, benar, total
     const correctCount = mapped.filter(q => {
       const choice = q.choices.find(c => String(c.id) === q.userChoiceId)
       return choice?.is_correct
     }).length
-
-    const totalQuestions = mapped.length
 
     const score = mapped.reduce((acc, q) => {
       const choice = q.choices.find(c => String(c.id) === q.userChoiceId)
@@ -95,7 +107,7 @@ export default function ResultPage() {
     setAttempt({
       ...attemptData,
       correct_answers: correctCount,
-      total_questions: totalQuestions,
+      total_questions: mapped.length,
       score,
     })
 
@@ -117,6 +129,8 @@ export default function ResultPage() {
       </div>
     )
   }
+
+  /* ================== JANGAN DIUBAH ================== */
 
   function renderSoal(html: string) {
     const latexRegex = /\$\$(.*?)\$\$/gs
@@ -143,26 +157,26 @@ export default function ResultPage() {
     const inlineRegex = /\$(.+?)\$/g
 
     const replaced = decoded
-  .replace(blockRegex, (_, expr) => {
-    try {
-      return katex.renderToString(expr.trim(), {
-        throwOnError: false,
-        displayMode: false,
+      .replace(blockRegex, (_, expr) => {
+        try {
+          return katex.renderToString(expr.trim(), {
+            throwOnError: false,
+            displayMode: false,
+          })
+        } catch {
+          return expr
+        }
       })
-    } catch {
-      return expr
-    }
-  })
-  .replace(inlineRegex, (_, expr) => {
-    try {
-      return katex.renderToString(expr.trim(), {
-        throwOnError: false,
-        displayMode: false,
+      .replace(inlineRegex, (_, expr) => {
+        try {
+          return katex.renderToString(expr.trim(), {
+            throwOnError: false,
+            displayMode: false,
+          })
+        } catch {
+          return expr
+        }
       })
-    } catch {
-      return expr
-    }
-  })
 
     return (
       <div
@@ -172,19 +186,72 @@ export default function ResultPage() {
     )
   }
 
+  /* ==== RATING ==== */
+
+
+
+  /* ================== CELEBRATION LOGIC ================== */
+
+  const percentage = Math.round(
+    (attempt.correct_answers / attempt.total_questions) * 100
+  )
+
+  const title =
+    percentage >= 85
+      ? 'Prestasi Sangat Baik'
+      : percentage >= 70
+      ? 'Hasil Baik'
+      : percentage >= 50
+      ? 'Cukup Baik'
+      : 'Perlu Latihan'
+
+  /* ================== UI ================== */
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* HEADER */}
+    <div className="min-h-screen bg-gray-50 relative overflow-hidden">
+
+      {/* CONFETTI */}
+      {percentage >= 60 && (
+        <div className="pointer-events-none absolute inset-0">
+          {[...Array(20)].map((_, i) => (
+            <span
+              key={i}
+              className="absolute top-0 animate-confetti"
+              style={{
+                left: `${Math.random() * 100}%`,
+                backgroundColor: ['#6366f1', '#22c55e', '#facc15', '#fa153bff', '#15fa8bff'][i % 5],
+                animationDelay: `${Math.random()}s`,
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* HEADER / PIAGAM */}
       <div className="bg-white border-b shadow-sm">
-        <div className="mx-auto max-w-4xl px-4 py-6">
-          <h1 className="text-2xl font-bold text-indigo-600">
-            Hasil Tes
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Skor kamu: <b>{attempt.score}</b> | Benar{' '}
-            <b>{attempt.correct_answers}</b> dari{' '}
-            <b>{attempt.total_questions}</b>
-          </p>
+        <div className="mx-auto max-w-4xl px-4 py-8 text-center">
+          <div className="inline-block rounded-2xl border bg-gradient-to-br from-indigo-50 to-white px-8 py-6 shadow">
+            <div className="text-3xl mb-2">🎓</div>
+            <h1 className="text-2xl font-bold text-indigo-600">
+              {title}
+            </h1>
+            <p className="mt-1 text-gray-600">
+              Skor: <b>{attempt.score}</b> • Benar{' '}
+              <b>{attempt.correct_answers}</b> dari{' '}
+              <b>{attempt.total_questions}</b>
+            </p>
+
+            <div className="mt-4 text-4xl font-extrabold text-indigo-700">
+              {percentage}%
+            </div>
+
+            <div className="mt-4 h-3 w-full rounded-full bg-gray-200 overflow-hidden">
+              <div
+                className="h-full bg-indigo-600 transition-all duration-700"
+                style={{ width: `${percentage}%` }}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -198,6 +265,7 @@ export default function ResultPage() {
             <h3 className="font-semibold mb-3">
               {idx + 1}.
             </h3>
+
             {renderSoal(q.text)}
 
             <div className="space-y-2">
@@ -217,6 +285,7 @@ export default function ResultPage() {
                       }`}
                   >
                     {renderChoice(c.text)}
+
                     {c.is_correct && (
                       <span className="ml-2 font-semibold">(Jawaban Benar)</span>
                     )}
@@ -224,11 +293,10 @@ export default function ResultPage() {
                       <span className="ml-2 font-semibold">(Jawaban Kamu)</span>
                     )}
 
-                    {/* Tambahan: tampilkan penjelasan jawaban benar */}
                     {c.is_correct && c.explanation && (
                       <div className="mt-2 text-gray-600 text-sm">
                         Penjelasan:
-                        {c.explanation && renderSoal(c.explanation)}
+                        {renderSoal(c.explanation)}
                       </div>
                     )}
                   </div>
@@ -238,15 +306,136 @@ export default function ResultPage() {
           </div>
         ))}
 
+        {/* ===== DUKUNG KAMI ===== */}
+        <div className="mt-10 rounded-2xl border bg-gradient-to-br from-pink-50 to-white p-6 text-center shadow-sm">
+          <h3 className="text-lg font-semibold text-pink-600">
+            ❤️ Dukung Kami
+          </h3>
+          <p className="mt-2 text-sm text-gray-600">
+            Jika platform ini bermanfaat, dukunganmu membantu kami
+            terus mengembangkan soal dan fitur pembelajaran.
+          </p>
+
+          <a
+            href="https://sociabuzz.com/bimbellesson/tribe"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 inline-block rounded-lg bg-pink-600 px-6 py-3 text-white font-medium hover:bg-pink-700 transition"
+          >
+            Dukung Sekarang
+          </a>
+        </div>
+
         <div className="text-center pt-6">
           <Link
-            to="/"
+            to="/category"
             className="inline-block rounded-lg bg-indigo-600 px-6 py-3 text-white hover:bg-indigo-700"
           >
-            Kembali ke Beranda
+            Kembali ke Daftar Mata Pelajaran
           </Link>
         </div>
+        {/* ===== RATING & KOMENTAR LEMBAR SOAL ===== */}
+        <div className="mt-12 rounded-2xl border bg-white p-6 shadow-sm">
+          <h3 className="text-lg font-semibold text-gray-800">
+            ⭐ Penilaian & Masukan
+          </h3>
+
+          <p className="mt-1 text-sm text-gray-600">
+            Nilai keseluruhan kualitas soal dan berikan masukan singkat.
+          </p>
+
+          {!user ? (
+            <div className="mt-4 rounded-lg border border-yellow-300 bg-yellow-50 p-4 text-sm text-yellow-800">
+              <p className="font-medium">
+                🔒 Login diperlukan
+              </p>
+              <p className="mt-1">
+                Silakan login dengan akun Google untuk memberikan rating dan komentar.
+              </p>
+
+              <button
+                onClick={async () => {
+                  await supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                  })
+                }}
+                className="mt-3 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+              >
+                Login dengan Google
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* RATING */}
+              <div className="mt-4">
+                <p className="text-sm font-medium text-gray-700 mb-2">
+                  Rating:
+                </p>
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <button
+                      key={star}
+                      onClick={() => setRating(star)}
+                      className={`text-3xl transition
+                        ${
+                          rating >= star
+                            ? 'text-yellow-400'
+                            : 'text-gray-300'
+                        } hover:scale-110`}
+                      aria-label={`Rating ${star}`}
+                    >
+                      ★
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* KOMENTAR */}
+              <div className="mt-4">
+                <textarea
+                  value={comment}
+                  onChange={e => setComment(e.target.value)}
+                  placeholder="Komentar atau saran (opsional)"
+                  rows={3}
+                  className="w-full rounded-lg border px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              {/* SUBMIT (BELUM SIMPAN DB) */}
+              <button
+                onClick={() => {
+                  console.log({
+                    attemptId,
+                    rating,
+                    comment,
+                    user_id: user.id,
+                    email: user.email,
+                  })
+                  alert('Terima kasih atas masukannya 🙏')
+                }}
+                disabled={rating === 0}
+                className="mt-4 rounded-lg bg-indigo-600 px-6 py-3 text-white hover:bg-indigo-700 disabled:opacity-50"
+              >
+                Kirim Penilaian
+              </button>
+            </>
+          )}
+        </div>
       </div>
+
+      {/* CONFETTI STYLE */}
+      <style>{`
+        .animate-confetti {
+          width: 6px;
+          height: 12px;
+          opacity: 0.8;
+          animation: confetti-fall 2s linear infinite;
+        }
+        @keyframes confetti-fall {
+          from { transform: translateY(-10vh) rotate(0deg); }
+          to { transform: translateY(50vh) rotate(360deg); }
+        }
+      `}</style>
     </div>
   )
 }

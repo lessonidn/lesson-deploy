@@ -70,19 +70,25 @@ export default function Members() {
       `${import.meta.env.VITE_SUPABASE_FUNCTION_URL}/delete-member`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          // 🔥 WAJIB
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+        },
         body: JSON.stringify({ userId }),
       }
     )
 
     const result = await res.json()
-    if (result.error) {
-      setError(result.error)
+    if (!res.ok) {
+      setError(result.error || 'Gagal menghapus member')
       return
     }
 
     load()
   }
+
 
   const filteredItems = items.filter(m =>
     m.full_name?.toLowerCase().includes(search.toLowerCase())

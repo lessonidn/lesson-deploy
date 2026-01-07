@@ -81,9 +81,17 @@ Deno.serve(async (req: Request) => {
     }
 
     // 4️⃣ Set role member
-    await supabase.auth.admin.updateUserById(user.id, {
-      app_metadata: { role: 'member' },
-    })
+    // ✅ simpan status membership di tabel profiles
+    await supabase
+      .from('profiles')
+      .update({
+        full_name,
+        role: 'member', // ini role di tabel profiles, bukan app_metadata
+        membership_status: 'active',
+        membership_type: 'free',
+        membership_started_at: new Date().toISOString(),
+      })
+      .eq('id', user.id)
 
     return new Response(JSON.stringify({ success: true }), {
       headers: {
