@@ -76,6 +76,12 @@ const SOCIAL_ICONS: Record<string, LucideIcon> = {
 
 /* ================= HELPERS ================= */
 
+function getClassNumber(name: string): number {
+  const match = name.match(/\d+/)
+  return match ? Number(match[0]) : 0
+}
+
+
 function slugify(text: string) {
   return text
     .toLowerCase()
@@ -254,7 +260,11 @@ export default function CategoryLandingPage() {
     })
 
     setCategory(cat)
-    setSubCategories(subs || [])
+    setSubCategories(
+      (subs || []).sort(
+        (a, b) => getClassNumber(a.name) - getClassNumber(b.name)
+      )
+    )
     setExamSets(exams || [])
     setLatestExams(latest || [])
     setLatestPages(pages || [])
