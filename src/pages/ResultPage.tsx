@@ -282,25 +282,25 @@ export default function ResultPage() {
                       }`}
                   >
                     {/* LABEL */}
-{isUserAnswer && !c.is_correct && (
-  <div className="mb-1 text-xs font-semibold text-red-600">
-    ( Jawaban Kamu )
-  </div>
-)}
+                    {isUserAnswer && !c.is_correct && (
+                      <div className="mb-6 text-xm font-semibold text-red-600">
+                        ( Jawaban Kamu )
+                      </div>
+                    )}
 
-{c.is_correct && (
-  <div className="mb-1 text-xs font-semibold text-green-600">
-    Jawaban Benar
-  </div>
-)}
+                    {c.is_correct && (
+                      <div className="mb-6 text-xm font-semibold text-green-600">
+                        Jawaban Benar
+                      </div>
+                    )}
 
-{/* KONTEN JAWABAN (TEXT / GAMBAR) */}
-{renderChoice(c.text)}
+                    {/* KONTEN JAWABAN (TEXT / GAMBAR) */}
+                    {renderChoice(c.text)}
 
 
                     {c.is_correct && c.explanation && (
                       <div className="mt-3 rounded-lg bg-gray-50 border px-3 py-2 text-sm">
-                        <div className="font-semibold text-gray-700 mb-1">
+                        <div className="font-semibold text-gray-700 mb-4 border-b-2 border-indigo-100">
                           Penjelasan:
                         </div>
                         {renderSoal(c.explanation)}

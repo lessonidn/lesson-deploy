@@ -86,7 +86,25 @@ export default function SubCategories() {
     load(filterCatId || undefined)
   }, [filterCatId])
 
-  const filteredItems = items
+  /* === OTOMATIS URUT ===*/
+  function getClassNumber(name: string): number {
+    const match = name.match(/\d+/)
+    return match ? Number(match[0]) : 0
+  }
+
+  const filteredItems = [...items].sort((a, b) => {
+    const catA = a.categories?.name || ''
+    const catB = b.categories?.name || ''
+
+    // 1️⃣ SORT MAPEL (MATEMATIKA, IPA, DLL)
+    if (catA !== catB) {
+      return catA.localeCompare(catB)
+    }
+
+    // 2️⃣ SORT KELAS (1, 2, 3, 4...)
+    return getClassNumber(a.name) - getClassNumber(b.name)
+  })
+
 
   return (
     <div className="space-y-6">

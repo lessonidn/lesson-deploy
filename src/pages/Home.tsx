@@ -312,6 +312,12 @@ export default function Home() {
     e.title.toLowerCase().includes(search.toLowerCase())
   )
 
+  /* == URUT KELAS ===*/
+  function getClassNumber(name: string): number {
+    const match = name.match(/\d+/)
+    return match ? Number(match[0]) : 0
+  }
+
 
   /* ================= RENDER ================= */
 
@@ -642,8 +648,12 @@ export default function Home() {
         {/* CONTENT */}
         <div className="md:col-span-3 space-y-10">
           {categories.map(cat => {
-            const catSubs = subCategories.filter(s => s.category_id === cat.id)
+            const catSubs = subCategories
+              .filter(s => s.category_id === cat.id)
+              .sort((a, b) => getClassNumber(a.name) - getClassNumber(b.name))
+
             if (!catSubs.length) return null
+
 
             return (
               <section key={cat.id}>

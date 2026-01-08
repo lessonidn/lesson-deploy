@@ -42,6 +42,7 @@ export default function ExamSets() {
   const [editId, setEditId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [filterSubId, setFilterSubId] = useState<string>('')
+  const [search, setSearch] = useState('')
   const { canClick } = usePreventDoubleClick()
 
   async function load() {
@@ -56,6 +57,18 @@ export default function ExamSets() {
     setSubs((subsData ?? []) as unknown as SubCategory[])
     setItems((examData ?? []) as unknown as ExamSet[])
   }
+
+  /* === FITUR SEARCH === */
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setSearch('')
+      }
+    }
+
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [])
 
   async function handleToggle(id: string, isPublished: boolean) {
     const { error } = await togglePublishExamSet('exam_sets', id, isPublished)
@@ -122,13 +135,15 @@ export default function ExamSets() {
           className="border px-3 py-2 rounded"
           value={subId}
           onChange={e => {
-            setSubId(e.target.value)
+            const newSubId = e.target.value
+            setSubId(newSubId)
 
-            // ✅ reset form kalau pindah sub kategori
-            setEditId(null)
-            setTitle('')
-            setDurationMinutes(30)
-            setError(null)
+            // 🔒 RESET HANYA JIKA MODE TAMBAH
+            if (!editId) {
+              setTitle('')
+              setDurationMinutes(30)
+              setError(null)
+            }
           }}
         >
           <option value="">Pilih Sub Kategori</option>
@@ -194,15 +209,14 @@ export default function ExamSets() {
 
       {error && <p className="text-red-500">{error}</p>}
 
-      {/* FILTER */}
-      <div>
+      {/* FILTER & SEARCH */}
+      <div className="flex flex-col md:flex-row gap-3 items-start md:items-center">
+        {/* FILTER SUB KATEGORI */}
         <select
           className="border px-3 py-2 rounded"
           value={filterSubId}
           onChange={e => {
             setFilterSubId(e.target.value)
-
-            // ✅ reset form kalau ganti filter
             setEditId(null)
             setTitle('')
             setSubId('')
@@ -217,12 +231,37 @@ export default function ExamSets() {
             </option>
           ))}
         </select>
+
+        {/* SEARCH */}
+        <div className="relative w-full md:w-72">
+          <input
+            type="text"
+            placeholder="Cari nama lembar soal..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full border px-3 py-2 pr-9 rounded focus:ring-2 focus:ring-indigo-500"
+          />
+
+          {/* TOMBOL SILANG */}
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500"
+              title="Bersihkan pencarian (ESC)"
+            >
+              ✕
+            </button>
+          )}
+        </div>
       </div>
 
       {/* LIST */}
       <ul className="bg-white border rounded divide-y">
         {items
           .filter(i => !filterSubId || i.sub_category_id === filterSubId)
+          .filter(i =>
+            i.title.toLowerCase().includes(search.toLowerCase())
+          )
           .map(i => (
             <li key={i.id} className="p-4 flex justify-between items-center hover:bg-yellow-300 transition-colors">
               <div>
@@ -272,6 +311,7 @@ export default function ExamSets() {
                     setTitle(i.title)
                     setSubId(i.sub_category_id)
                     setDurationMinutes(i.duration_minutes || 30)
+                    setSearch('')
                     window.scrollTo({ top: 0, behavior: 'smooth' })
                   }}
                   className="px-3 py-1 bg-yellow-500 text-white rounded text-sm"

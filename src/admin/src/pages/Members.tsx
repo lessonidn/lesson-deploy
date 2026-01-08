@@ -139,7 +139,7 @@ export default function Members() {
                   )}
                 </td>
 
-                <td className="px-4 py-2">
+                <td className="text-center px-4 py-2">
                   {m.membership_type === 'free' && (
                     <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
                       Invite
@@ -152,13 +152,13 @@ export default function Members() {
                   )}
                 </td>
 
-                <td className="px-4 py-2">
+                <td className="text-center px-4 py-2">
                   <span className="text-xs px-2 py-0.5 rounded bg-gray-100">
                     {m.membership_status}
                   </span>
                 </td>
 
-                <td className="px-4 py-2">
+                <td className="text-center px-4 py-2">
                   {m.membership_expired_at
                     ? new Date(
                         m.membership_expired_at
@@ -166,12 +166,12 @@ export default function Members() {
                     : '-'}
                 </td>
 
-                <td className="px-4 py-2 space-x-2">
+                <td className="text-center px-4 py-2 space-x-2">
                   <button
                     onClick={() => revokeMember(m.id)}
                     className="text-xs bg-red-600 text-white px-2 py-1 rounded"
                   >
-                    Revoke
+                    Cabut
                   </button>
                   <button
                     onClick={() => deleteMember(m.id)}
