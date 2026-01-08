@@ -1,62 +1,64 @@
-import { useEffect, useState } from 'react'
-import { supabase } from '../../../../lib/supabase'
+import { useEffect, useState, useCallback } from 'react';
+import { supabase } from '../../../../lib/supabase';
 
 type MediaFile = {
-  path: string
-  publicUrl: string
-}
+  path: string;
+  publicUrl: string;
+};
 
 type Props = {
-  open: boolean
-  onClose: () => void
-  onSelect: (url: string) => void
-}
+  open: boolean;
+  onClose: () => void;
+  onSelect: (url: string) => void;
+  bucket?: string;
+};
 
-const FOLDERS = ['questions', 'categories', 'banners', 'misc']
+const FOLDERS = ['questions', 'categories', 'banners', 'misc', 'choices'];
 
-export default function MediaPickerModal({ open, onClose, onSelect }: Props) {
-  const [files, setFiles] = useState<MediaFile[]>([])
-  const [loading, setLoading] = useState(false)
+export default function MediaPickerModal({ open, onClose, onSelect, bucket }: Props) {
+  const [files, setFiles] = useState<MediaFile[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  async function loadMedia() {
-    setLoading(true)
-    const all: MediaFile[] = []
+  const loadMedia = useCallback(async () => {
+    setLoading(true);
+    const all: MediaFile[] = [];
+
+    const storageBucket = bucket || 'media'; // ✅ DEFAULT AMAN
 
     for (const folder of FOLDERS) {
       const { data } = await supabase.storage
-        .from('media')
-        .list(folder, { limit: 100 })
+        .from(storageBucket)
+        .list(folder, { limit: 100 });
 
-      if (!data) continue
+      if (!data) continue;
 
       for (const f of data) {
-        // ✅ skip folder atau file tanpa nama
-        if (!f.name || f.metadata?.size === 0) continue
+        // ✅ skip folder atau file kosong
+        if (!f.name || f.metadata?.size === 0) continue;
 
-        const path = `${folder}/${f.name}`
+        const path = `${folder}/${f.name}`;
         const { data: url } = supabase.storage
-          .from('media')
-          .getPublicUrl(path)
+          .from(storageBucket)
+          .getPublicUrl(path);
 
-        // ✅ hanya push kalau URL valid dan bukan folder
         if (url?.publicUrl) {
-          all.push({ path, publicUrl: url.publicUrl })
+          all.push({ path, publicUrl: url.publicUrl });
         }
       }
     }
 
-    // ✅ sort descending supaya file terbaru di kiri
-    const sorted = all.sort((a, b) => b.path.localeCompare(a.path))
+    // ✅ file terbaru di depan
+    const sorted = all.sort((a, b) => b.path.localeCompare(a.path));
 
-    setFiles(sorted)
-    setLoading(false)
-  }
+    setFiles(sorted);
+    setLoading(false);
+  }, [bucket]); // ✅ stabil, hanya berubah kalau bucket berubah
 
   useEffect(() => {
-    if (open) loadMedia()
-  }, [open])
+    if (open) loadMedia();
+  }, [open, loadMedia]);
 
-  if (!open) return null
+  if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
@@ -73,8 +75,8 @@ export default function MediaPickerModal({ open, onClose, onSelect }: Props) {
             <button
               key={f.path}
               onClick={() => {
-                onSelect(f.publicUrl)
-                onClose()
+                onSelect(f.publicUrl);
+                onClose();
               }}
               className="border rounded hover:ring-2 hover:ring-indigo-500 p-2 flex items-center justify-center h-32"
             >
@@ -94,5 +96,5 @@ export default function MediaPickerModal({ open, onClose, onSelect }: Props) {
         )}
       </div>
     </div>
-  )
+  );
 }

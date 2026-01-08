@@ -7,7 +7,7 @@ type MediaFile = {
   publicUrl: string
 }
 
-const FOLDERS = ['questions', 'categories', 'banners', 'misc']
+const FOLDERS = ['questions', 'categories', 'banners', 'misc', 'choices']
 
 export default function Media() {
   const [files, setFiles] = useState<MediaFile[]>([])

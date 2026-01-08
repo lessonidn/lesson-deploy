@@ -141,7 +141,7 @@ export default function ResultPage() {
       <div
         className="prose max-w-none prose-p:my-0 prose-table:my-0 prose-img:my-0
                   [&_td]:p-1 [&_th]:p-1 [&_td]:text-sm [&_tr]:leading-tight
-                  [&_img]:max-w-[500px] [&_img]:h-auto [&_img]:mx-auto"
+                  [&_img]:max-w-[300px] [&_img]:h-auto [&_img]:mx-auto"
         dangerouslySetInnerHTML={{ __html: replaced }}
       />
     )
@@ -150,44 +150,41 @@ export default function ResultPage() {
   function renderChoice(html: string) {
     if (!html) return null
 
-    let decoded = html.replace(/\\\\/g, '\\')
-    decoded = decoded.replace(/<\/?[^>]+(>|$)/g, '')
+    const latexBlock = /\$\$([\s\S]*?)\$\$/g
+    const latexInline = /\$(.+?)\$/g
 
-    const blockRegex = /\$\$([\s\S]*?)\$\$/g
-    const inlineRegex = /\$(.+?)\$/g
-
-    const replaced = decoded
-      .replace(blockRegex, (_, expr) => {
-        try {
-          return katex.renderToString(expr.trim(), {
-            throwOnError: false,
-            displayMode: false,
-          })
-        } catch {
-          return expr
-        }
-      })
-      .replace(inlineRegex, (_, expr) => {
-        try {
-          return katex.renderToString(expr.trim(), {
-            throwOnError: false,
-            displayMode: false,
-          })
-        } catch {
-          return expr
-        }
-      })
+    const replaced = html
+      .replace(latexBlock, (_, expr) =>
+        katex.renderToString(expr.trim(), {
+          throwOnError: false,
+          displayMode: false,
+        })
+      )
+      .replace(latexInline, (_, expr) =>
+        katex.renderToString(expr.trim(), {
+          throwOnError: false,
+          displayMode: false,
+        })
+      )
 
     return (
       <div
-        className="prose max-w-none prose-p:my-0 prose-img:my-0 text-left"
+        className="
+          prose max-w-none
+          prose-p:my-1
+          prose-img:my-3
+          prose-img:mx-auto
+          prose-img:rounded-lg
+          prose-img:max-w-[360px]
+          prose-img:w-full
+          prose-img:h-auto
+          prose-table:text-sm
+          text-left
+        "
         dangerouslySetInnerHTML={{ __html: replaced }}
       />
     )
   }
-
-  /* ==== RATING ==== */
-
 
 
   /* ================== CELEBRATION LOGIC ================== */
@@ -284,18 +281,28 @@ export default function ResultPage() {
                           : 'border-gray-200'
                       }`}
                   >
-                    {renderChoice(c.text)}
+                    {/* LABEL */}
+{isUserAnswer && !c.is_correct && (
+  <div className="mb-1 text-xs font-semibold text-red-600">
+    ( Jawaban Kamu )
+  </div>
+)}
 
-                    {c.is_correct && (
-                      <span className="ml-2 font-semibold">(Jawaban Benar)</span>
-                    )}
-                    {isUserAnswer && !c.is_correct && (
-                      <span className="ml-2 font-semibold">(Jawaban Kamu)</span>
-                    )}
+{c.is_correct && (
+  <div className="mb-1 text-xs font-semibold text-green-600">
+    Jawaban Benar
+  </div>
+)}
+
+{/* KONTEN JAWABAN (TEXT / GAMBAR) */}
+{renderChoice(c.text)}
+
 
                     {c.is_correct && c.explanation && (
-                      <div className="mt-2 text-gray-600 text-sm">
-                        Penjelasan:
+                      <div className="mt-3 rounded-lg bg-gray-50 border px-3 py-2 text-sm">
+                        <div className="font-semibold text-gray-700 mb-1">
+                          Penjelasan:
+                        </div>
                         {renderSoal(c.explanation)}
                       </div>
                     )}

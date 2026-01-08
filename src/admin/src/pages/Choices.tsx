@@ -53,13 +53,13 @@ const CustomImage = Node.create({
   group: 'block',
   inline: false,
   draggable: true,
-  atom: true,
+  atom: false, // ✅ PENTING: HARUS FALSE
 
   addAttributes() {
     return {
       src: { default: null },
-      width: { default: 200 },
-      height: { default: 150 },
+      width: { default: 120 },
+      height: { default: 90 },
     }
   },
 
@@ -77,12 +77,13 @@ const CustomImage = Node.create({
 })
 
 
+
 export default function Choices() {
   const [examSets, setExamSets] = useState<ExamSet[]>([])
   const [examId, setExamId] = useState('')
   const [questions, setQuestions] = useState<Question[]>([])
   const [questionId, setQuestionId] = useState('')
-  const [text, setText] = useState('')
+  const [choiceHtml, setChoiceHtml] = useState('')
   const [correct, setCorrect] = useState(false)
   const [explanation, setExplanation] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -90,6 +91,8 @@ export default function Choices() {
   const [editId, setEditId] = useState<string | null>(null)
   const { canClick } = usePreventDoubleClick()
   const [showMediaPicker, setShowMediaPicker] = useState(false)
+  const [showMediaPickerChoice, setShowMediaPickerChoice] = useState(false)
+
 
   const unicodeSymbols = [
     "√", "∛", "∜", "∑", "π", "∞", "Δ", "Ω",
@@ -117,10 +120,10 @@ export default function Choices() {
   }
 
   async function save() {
-    if (!questionId || !text) return
+    if (!questionId || !choiceHtml) return
     if (!canClick()) return
 
-    const cleanedText = cleanHtmlTail(text)
+    const cleanedText = cleanHtmlTail(choiceHtml)
     const cleanedExplanation = cleanHtmlTail(explanation)
 
     if (editId) {
@@ -132,11 +135,11 @@ export default function Choices() {
       if (error) setError(error.message)
     }
 
-    setText('')
+    setChoiceHtml('')
     setCorrect(false)
     setExplanation('')
     loadChoices(questionId)
-    explanationEditor?.commands.setContent(`<p></p><p></p><p><br></p><p><br></p>`)
+    choiceEditor?.commands.setContent(`<p><br></p>`)
   }
 
   async function remove(id: string) {
@@ -147,7 +150,7 @@ export default function Choices() {
 
   function cancelEdit() {
     setEditId(null)
-    setText('')
+    setChoiceHtml('')
     setCorrect(false)
     setExplanation('')
     explanationEditor?.commands.setContent(`<p><br></p>`) // ✅ reset editor visual
@@ -185,7 +188,7 @@ function renderLatexBlocks(html: string) {
   const replaced = html.replace(blockRegex, (_, expr) =>
     katex.renderToString(expr.trim(), {
       throwOnError: false,
-      displayMode: true,
+      displayMode: false,
     })
   )
   return (
@@ -195,6 +198,7 @@ function renderLatexBlocks(html: string) {
     />
   )
 }
+
 
 function cleanHtmlTail(html: string) {
   // Hapus <p><br></p> atau <p></p> di akhir
@@ -211,11 +215,24 @@ function cleanHtmlTail(html: string) {
       TableCell,
       CustomImage,
     ],
-    content: `<p></p><p></p><p><br></p><p><br></p>`, // default tinggi editor
+    content: `<p><br></p>`, // default tinggi editor
     onUpdate: ({ editor }) => {
       setExplanation(editor.getHTML())
     },
   })
+
+  /* ==== INSERT GAMBAR ==== */
+  const choiceEditor = useEditor({
+    extensions: [
+      StarterKit,
+      CustomImage,
+    ],
+    content: `<p><br></p>`,
+    onUpdate: ({ editor }) => {
+      setChoiceHtml(editor.getHTML())
+    },
+  })
+
 
   return (
     <div className="space-y-4">
@@ -253,10 +270,10 @@ function cleanHtmlTail(html: string) {
             // ✅ hanya reset kalau sedang edit
             if (editId) {
               setEditId(null)
-              setText('')
+              setChoiceHtml('')
               setCorrect(false)
               setExplanation('')
-              explanationEditor?.commands.setContent(`<p></p><p></p><p><br></p><p><br></p>`)
+              explanationEditor?.commands.setContent(`<p><br></p>`)
             }
 
             if (newId) {
@@ -274,13 +291,68 @@ function cleanHtmlTail(html: string) {
             ))}
         </select>
 
-        <textarea
-          className="border px-3 py-2 rounded w-full md:col-span-2"
-          placeholder="Jawaban (boleh pakai $$...$$ untuk rumus)"
-          value={text}
-          onChange={e => setText(e.target.value)}
-          rows={1}
-        />
+        <div className="border rounded w-full md:col-span-2 bg-white">
+          <EditorContent
+            editor={choiceEditor}
+            className="min-h-[40px] p-2 focus:outline-none max-w-none
+                      prose-p:my-0 prose-img:my-1
+                      [&_img]:max-w-full [&_img]:h-auto"
+            placeholder="Jawaban (boleh teks, rumus, atau paste gambar)"
+          />
+
+          {/* Upload gambar kecil */}
+          <div className="flex justify-end gap-3 border-t px-2 py-1 bg-gray-50">
+            <label className="text-xs cursor-pointer hover:text-indigo-600">
+              🖼 Upload
+              <input
+                type="file"
+                hidden
+                accept="image/*"
+                onChange={async e => {
+                  const file = e.target.files?.[0]
+                  if (!file) return
+
+                  const path = await uploadImageAsWebP(file, 'choices')
+                  const { data } = supabase.storage
+                    .from('media')
+                    .getPublicUrl(path)
+
+                  choiceEditor?.chain().focus().insertContent({
+                    type: 'customImage',
+                    attrs: { src: data.publicUrl, width: 120, height: 90 },
+                  }).run()
+
+                  e.target.value = ''
+                }}
+              />
+            </label>
+
+            <button
+              type="button"
+              onClick={() => setShowMediaPickerChoice(true)}
+              className="text-xs hover:text-indigo-600"
+            >
+              🗂 Media
+            </button>
+            
+            <MediaPickerModal
+              open={showMediaPickerChoice}
+              onClose={() => setShowMediaPickerChoice(false)}
+              onSelect={(url) => {
+                setShowMediaPickerChoice(false)
+                choiceEditor?.chain().focus().insertContent({
+                  type: 'customImage',
+                  attrs: {
+                    src: url,
+                    width: 120,   // default kecil
+                    height: 90,
+                  },
+                }).run()
+              }}
+            />
+
+          </div>
+        </div>
 
         <label className="flex items-center gap-1 w-full">
           <input
@@ -355,10 +427,13 @@ function cleanHtmlTail(html: string) {
               setShowMediaPicker(false)
               explanationEditor?.chain().focus().insertContent({
                 type: 'customImage',
-                attrs: { src: url, width: 200, height: 150 },
+                attrs: { src: url, width: 120, height: 90 },
               }).run()
             }}
           />
+
+          
+
 
           {/* ✅ Tombol Unicode */}
           <button
@@ -458,9 +533,10 @@ function cleanHtmlTail(html: string) {
                   <button
                     onClick={() => {
                       setEditId(c.id)
-                      setText(c.text)
+                      setChoiceHtml(c.text)
                       setCorrect(c.is_correct)
                       setExplanation(c.explanation || '')
+                      choiceEditor?.commands.setContent(c.text)
                       explanationEditor?.commands.setContent(c.explanation || `<p></p><p></p><p><br></p><p><br></p>`)
                       window.scrollTo({ top: 0, behavior: 'smooth' }) // ✅ scroll ke atas otomatis
                     }}

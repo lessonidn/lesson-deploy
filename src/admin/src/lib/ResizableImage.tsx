@@ -6,10 +6,20 @@ export default function ResizableImage(props: ReactNodeViewProps) {
   const { src, width = 200, height = 150 } = node.attrs
 
   return (
-    <NodeViewWrapper className="resizable-image">
+    <NodeViewWrapper
+      contentEditable={false}
+      className="relative block my-2"
+      style={{
+        width: width,
+        height: height,
+      }}
+    >
       <Rnd
-        default={{ x: 0, y: 0, width, height }}
-        bounds="parent"
+        size={{ width, height }}
+        enableResizing={{
+          bottomRight: true,
+        }}
+        disableDragging // ✅ PENTING
         onResizeStop={(_, __, ref) => {
           updateAttributes({
             width: ref.offsetWidth,
@@ -17,7 +27,17 @@ export default function ResizableImage(props: ReactNodeViewProps) {
           })
         }}
       >
-        <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+        <img
+          src={src}
+          alt=""
+          draggable={false}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
+            display: 'block',
+          }}
+        />
       </Rnd>
     </NodeViewWrapper>
   )

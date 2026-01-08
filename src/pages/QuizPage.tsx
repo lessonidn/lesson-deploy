@@ -72,7 +72,7 @@ export default function QuizPage() {
     const replaced = html.replace(blockRegex, (_, expr) =>
       katex.renderToString(expr.trim(), {
         throwOnError: false,
-        displayMode: true,
+        displayMode: false,
       })
     )
     return (

@@ -3,7 +3,7 @@ import { convertToWebP } from '../utils/convertToWebP'
 
 export async function uploadImageAsWebP(
   file: File,
-  folder: 'questions' | 'categories' | 'banners' | 'misc'
+  folder: 'questions' | 'categories' | 'banners' | 'misc' | 'choices'
 ): Promise<string> {
   // Validasi
   if (!file.type.startsWith('image/')) {
