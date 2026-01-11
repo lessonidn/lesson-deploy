@@ -122,7 +122,7 @@ export default function CategoryLandingPage() {
   const [loading, setLoading] = useState(true)
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([])
   const [scrolled, setScrolled] = useState(false)
-  const [mobileOpen, setMobileOpen] = useState(false)
+  const [openMenu, setOpenMenu] = useState<string | null>(null)
   const { session, profile, logout } = useAuth()
 
   const isMemberActive = profile?.membership_status === 'active'
@@ -375,15 +375,19 @@ export default function CategoryLandingPage() {
           {/* Content */}
           <div className="relative max-w-6xl mx-auto px-4 py-5 flex justify-between items-center text-white">
             <div className="relative">
-              <img src={logo} alt="lesson" className="absolute -top-5 right-7 h-6" />
-              <h1 className="text-3xl font-extrabold tracking-wide">
-                <span className="text-white drop-shadow">
-                  LES
-                </span>
-                <span className="text-sky-400 glow-son">
-                  SON
-                </span>
-              </h1>
+              <Link to="/" className="inline-block">
+                <h1 className="text-3xl font-extrabold tracking-wide flex items-center gap-0 mt-3">
+                  <span className="text-white drop-shadow">LES</span>
+                  <span className="text-sky-400 glow-son relative">
+                    SON
+                    <img
+                      src={logo}
+                      alt="logo daun"
+                      className="absolute -top-6 -right-3 h-7"
+                    />
+                  </span>
+                </h1>
+              </Link>
               <p className="text-xs text-gray-300 tracking-wide">
                 The Best Choice Of Tutoring
               </p>
@@ -519,12 +523,14 @@ export default function CategoryLandingPage() {
                 )}
               </div>
 
-              <div className="relative">
+              <div className="flex flex-col max-w-xs md:max-w-none gap-2">
+              {/* Search */}
+              <div className="relative w-full">
                 <input
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   placeholder="Cari latihan / ujian..."
-                  className="border border-gray-600 bg-gray-900 text-white rounded-xl px-3 py-2 text-sm w-48 pr-8 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  className="border border-gray-600 bg-gray-900 text-white rounded-xl px-3 py-2 text-sm w-full pr-8 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
                 />
                 {search && (
                   <button
@@ -534,45 +540,60 @@ export default function CategoryLandingPage() {
                     ✕
                   </button>
                 )}
-                <button
-                  onClick={() => setMobileOpen(true)}
-                  className="md:hidden text-white text-2xl"
-                >
-                  ☰
-                </button>
               </div>
-            </div>
-          </div>
-        </header>
-        
-        {mobileOpen && (
-          <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm">
-            <div className="absolute right-0 top-0 h-full w-72 bg-gray-900 p-6 shadow-xl">
-              <button
-                onClick={() => setMobileOpen(false)}
-                className="text-white text-xl mb-6"
-              >
-                ✕
-              </button>
 
-              <nav className="space-y-4">
+              {/* Navbar di bawah search, horizontal & kecil */}
+              <nav className="relative flex flex-row justify-end gap-3 w-full text-xs font-medium md:hidden">
                 {headerMenus.map(menu => (
-                  <Link
-                    key={menu.id}
-                    to={menu.url || '#'}
-                    onClick={() => setMobileOpen(false)}
-                    className="block text-white text-lg hover:text-sky-400"
-                  >
-                    {menu.label}
-                  </Link>
+                  <div key={menu.id} className="relative overflow-visible">
+                    {menu.children && menu.children.length > 0 ? (
+                      <button
+                        onClick={() =>
+                          setOpenMenu(openMenu === menu.id ? null : menu.id)
+                        }
+                        className="text-white hover:text-sky-400 whitespace-nowrap flex items-center gap-1"
+                      >
+                        {menu.label}
+                        <span className="text-[10px]">
+                          {openMenu === menu.id ? '▲' : '▼'}
+                        </span>
+                      </button>
+                    ) : (
+                      <Link
+                        to={menu.url || '#'}
+                        className="text-white hover:text-sky-400 whitespace-nowrap"
+                      >
+                        {menu.label}
+                      </Link>
+                    )}
+
+                    {menu.children && menu.children.length > 0 && (
+                      <div
+                        className={`absolute top-full left-0 mt-2 min-w-[8rem] bg-gray-800 rounded-md shadow-lg p-2 flex flex-col gap-1 z-50 transition-all duration-200 ${
+                          openMenu === menu.id ? 'opacity-100 visible' : 'opacity-0 invisible'
+                        }`}
+                      >
+                        {menu.children.map(child => (
+                          <Link
+                            key={child.id}
+                            to={child.url || '#'}
+                            className="text-gray-300 hover:text-sky-400 text-[11px] whitespace-nowrap px-2 py-1 rounded"
+                          >
+                            {child.label}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 ))}
               </nav>
             </div>
           </div>
-        )}
+        </div>
+      </header>
 
         {/* CONTENT */}
-        <main className="max-w-6xl mx-auto px-4 py-10 pt-24 grid md:grid-cols-4 gap-10 flex-1">
+        <main className="max-w-6xl mx-auto px-4 py-10 pt-32 grid md:grid-cols-4 gap-10 flex-1">
           <div className="md:col-span-3 space-y-10">
             <h1 className="text-3xl font-bold mb-2">{category.name}</h1>
 
