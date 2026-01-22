@@ -33,26 +33,80 @@ export default function QuizPage() {
   const [timeLeft, setTimeLeft] = useState<number>(0)
   const [isTimeUp, setIsTimeUp] = useState(false)
 
+  // STATE TAMBAHAN: fase review unanswered
+  const [inReview, setInReview] = useState(false)
+  const [reviewQueue, setReviewQueue] = useState<number[]>([])
+  const [reviewPos, setReviewPos] = useState(0)
+
+  // Utility: ambil index soal yang belum terjawab (sesuai urutan asli)
   function getUnansweredIndexes() {
     return questions
       .map((q, index) => (answers[q.id] ? null : index))
       .filter((v): v is number => v !== null)
   }
 
+  // Navigasi "Selanjutnya"
   function goNext() {
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex(i => i + 1)
-      window.scrollTo({ top: 0, behavior: 'smooth' })   // ⬅️ scroll ke atas
+    // Fase normal (belum review)
+    if (!inReview) {
+      if (currentIndex < questions.length - 1) {
+        setCurrentIndex(i => i + 1)
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+        return
+      }
+
+      // Sudah di soal terakhir → masuk fase review jika ada yang kosong
+      const unanswered = getUnansweredIndexes()
+      if (unanswered.length > 0) {
+        setInReview(true)
+        setReviewQueue(unanswered)   // "bekukan" daftar unanswered saat ini
+        setReviewPos(0)
+        setCurrentIndex(unanswered[0])
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+        return
+      }
+
+      // Tidak ada yang kosong → submit
+      submitQuiz()
       return
     }
-    const unanswered = getUnansweredIndexes()
-    if (unanswered.length > 0) {
-      setCurrentIndex(unanswered[0])
-      window.scrollTo({ top: 0, behavior: 'smooth' })   // ⬅️ scroll ke atas
-      return
+
+    // Fase review (menelusuri reviewQueue secara sekuensial, skip yang sudah terjawab)
+    if (inReview) {
+      // Cari next index di reviewQueue setelah reviewPos yang masih belum terjawab
+      let nextPos = reviewPos + 1
+      while (nextPos < reviewQueue.length) {
+        const idx = reviewQueue[nextPos]
+        const q = questions[idx]
+        if (!answers[q.id]) {
+          setReviewPos(nextPos)
+          setCurrentIndex(idx)
+          window.scrollTo({ top: 0, behavior: 'smooth' })
+          return
+        }
+        nextPos++
+      }
+
+      // Tidak ada unanswered tersisa di reviewQueue → cek sekali lagi
+      const stillUnanswered = questions.some(q => !answers[q.id])
+      if (stillUnanswered) {
+        // Ada yang masih kosong tapi tidak ada di queue (mis. user mengosongkan lagi)
+        // Bangun ulang queue dari posisi sekarang, tetap urutan asli
+        const fresh = getUnansweredIndexes()
+        if (fresh.length > 0) {
+          setReviewQueue(fresh)
+          setReviewPos(0)
+          setCurrentIndex(fresh[0])
+          window.scrollTo({ top: 0, behavior: 'smooth' })
+          return
+        }
+      }
+
+      // Semua sudah terjawab → submit
+      submitQuiz()
     }
-    submitQuiz()
   }
+
 
   function renderSoal(html: string) {
     const latexRegex = /\$\$(.*?)\$\$/gs
@@ -201,9 +255,13 @@ export default function QuizPage() {
     setLoading(false)
   }
 
+  // Saat user memilih jawaban
   function selectAnswer(questionId: string, choiceId: string) {
     if (isTimeUp) return
-    setAnswers(prev => ({ ...prev, [questionId]: choiceId }))
+    setAnswers(prev => ({ 
+      ...prev, 
+      [questionId]: choiceId 
+    }))
   }
 
   function formatTime(seconds: number) {
