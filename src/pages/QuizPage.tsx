@@ -161,6 +161,7 @@ export default function QuizPage() {
           is_correct: selectedChoice?.is_correct || false,
         }
       })
+      
 
       const { error: answerError } = await supabase
         .from('quiz_answers')
@@ -181,6 +182,19 @@ export default function QuizPage() {
         .from('quiz_attempts')
         .update({ score, correct_answers: correctCount })
         .eq('id', attempt.id)
+
+      const attemptId = sessionStorage.getItem('attempt_id')
+
+      if (attemptId) {
+        await supabase
+          .from('exam_attempts')
+          .update({
+            finished_at: new Date(),
+            score
+          })
+          .eq('id', attemptId)
+      }
+      sessionStorage.removeItem('attempt_id')
 
       navigate(`/result/${attempt.id}`)
     } catch (err: unknown) {

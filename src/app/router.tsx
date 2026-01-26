@@ -14,11 +14,13 @@ import UpgradeMember from "../pages/UpgradeMember"
 import InviteRegister from "../pages/InviteRegister"
 import LoginMember from '../pages/LoginMember'
 import MemberDashboard from "../pages/MemberDashboard"
+import ExamRedirect from '../pages/ExamRedirect'
 
 export const userRoutes: RouteObject[] = [
   { path: '/', element: <Home /> },
   { path: '/category', element: <CategoryIndexPage /> },
-  { path: '/exam/:id', element: <ExamPage /> },
+  { path: '/exam/:id', element: <ExamRedirect /> },
+  { path: "/:categorySlug/:subCategorySlug/:examSlug", element: <ExamPage /> },
   { path: '/quiz/:id', element: <QuizPage /> },
   { path: '/result/:attemptId', element: <ResultPage /> },
   { path: '/blog/:slug', element: <BlogDetail /> },
