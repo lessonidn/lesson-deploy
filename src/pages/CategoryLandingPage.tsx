@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
@@ -11,6 +11,7 @@ import {
   Music,
   LucideIcon
 } from 'lucide-react'
+import RequestSoalWA from '../components/RequestSoalWA'
 
 /* ================= TYPES ================= */
 
@@ -127,7 +128,54 @@ export default function CategoryLandingPage() {
 
   const isMemberActive = profile?.membership_status === 'active'
 
+  const [searchResults, setSearchResults] = useState<ExamSet[]>([])
+  const searchResultRef = useRef<HTMLDivElement | null>(null)
 
+  // BLOK PENCARIAN
+  function normalize(str: string) {
+    return str.toLowerCase()
+  }
+
+  function handleSearch() {
+    const term = normalize(search)
+    if (!term) {
+      setSearchResults([])
+      return
+    }
+
+    const results = examSets.filter(e => {
+      const sub = subCategories.find(s => s.id === e.sub_category_id)
+      const examTitle = normalize(e.title)
+      const subName = normalize(sub?.name || '')
+
+      if (examTitle.includes(term)) return true
+      if (subName.includes(term)) return true
+
+      const matchKelas = subName.match(/kelas\s*\d+/i)
+      if (matchKelas && normalize(matchKelas[0]).includes(term)) return true
+
+      return false
+    })
+
+    setSearchResults(results)
+
+    // ✅ SCROLL PRESISI KE H2
+    setTimeout(() => {
+      if (!searchResultRef.current) return
+
+      const y =
+        searchResultRef.current.getBoundingClientRect().top +
+        window.scrollY -
+        HEADER_OFFSET
+
+      window.scrollTo({
+        top: y,
+        behavior: 'smooth',
+      })
+    }, 50)
+  }
+
+  const HEADER_OFFSET = 140
 
   // Header scroll effect
     useEffect(() => {
@@ -526,20 +574,25 @@ export default function CategoryLandingPage() {
               <div className="flex flex-col max-w-xs md:max-w-none gap-2">
               {/* Search */}
               <div className="relative w-full">
-                <input
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  placeholder="Cari latihan / ujian..."
-                  className="border border-gray-600 bg-gray-900 text-white rounded-xl px-3 py-2 text-sm w-full pr-8 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
-                />
-                {search && (
+                <form
+                  onSubmit={e => {
+                    e.preventDefault()
+                    handleSearch()
+                  }}
+                >
+                  <input
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    placeholder="Cari latihan / ujian / kelas..."
+                    className="border border-gray-600 bg-gray-900 text-white rounded-xl px-3 py-2 text-sm w-full pr-8 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  />
                   <button
-                    onClick={() => setSearch('')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400"
+                    type="submit"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-sky-400"
                   >
-                    ✕
+                    🔍
                   </button>
-                )}
+                </form>
               </div>
 
               {/* Navbar di bawah search, horizontal & kecil */}
@@ -595,119 +648,154 @@ export default function CategoryLandingPage() {
         {/* CONTENT */}
         <main className="max-w-6xl mx-auto px-4 py-10 pt-32 grid md:grid-cols-4 gap-10 flex-1">
           <div className="md:col-span-3 space-y-10">
-            <h1 className="text-3xl font-bold mb-2">{category.name}</h1>
+            {search ? (
+              <section ref={searchResultRef}>
+                <h2 className="text-xl font-bold mb-4">
+                  🔍 Hasil Pencarian: "{search}"
+                </h2>
 
-            {category.description && (
-              <p className="text-gray-600 max-w-2xl mb-8">
-                {category.description}
-              </p>
-            )}
-
-            {subCategories.map(sub => {
-              const exams = examSets.filter(e => e.sub_category_id === sub.id)
-              if (!exams.length) return null
-
-              return (
-                <section key={sub.id} id={slugify(sub.name)}>
-                  <h2 className="text-lg font-semibold text-blue-600 mb-3">
-                    {sub.name}
-                  </h2>
+                {searchResults.length > 0 ? (
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {exams.map(exam => {
-                      const isMemberOnly = exam.is_member_only
-                      const isLocked = isMemberOnly && !isMemberActive
-
-                      // Exam publik → selalu bisa diakses
-                      if (!isMemberOnly) {
-                        return (
-                          <Link
-                            key={exam.id}
-                            to={`/exam/${exam.id}`}
-                            className="
-                              relative p-5 rounded-2xl border
-                              transition hover:shadow-lg hover:-translate-y-1
-                              bg-white
-                            "
-                          >
-                            <div className="w-8 h-8 rounded-full flex items-center justify-center mb-3 bg-blue-100 text-blue-600">
-                              ✏️
-                            </div>
-                            <div className="font-semibold text-gray-800 leading-snug">
-                              {exam.title}
-                            </div>
-                            <div className="mt-2 text-xs text-blue-600">
-                              Kerjakan Sekarang →
-                            </div>
-                          </Link>
-                        )
-                      }
-
-                      // Exam member-only tapi user belum aktif → teaser yang bisa diklik ke /upgrade
-                      if (isLocked) {
-                        return (
-                          <Link
-                            key={exam.id}
-                            to="/upgrade"
-                            className="
-                              relative p-5 rounded-2xl border
-                              transition hover:shadow-lg hover:-translate-y-1
-                              bg-gradient-to-br from-purple-50 to-white border-purple-300
-                            "
-                          >
-                            <div className="absolute top-3 right-3 bg-purple-600 text-white text-[10px] font-semibold px-2 py-1 rounded-full tracking-wide">
-                              KHUSUS MEMBER
-                            </div>
-                            <div className="w-8 h-8 rounded-full flex items-center justify-center mb-3 bg-purple-100 text-purple-600">
-                              ✏️
-                            </div>
-                            <div className="font-semibold text-gray-800 leading-snug">
-                              {exam.title}
-                            </div>
-                            <div className="mt-2 text-sm text-gray-600">
-                              Latihan eksklusif dengan pembahasan lengkap
-                            </div>
-                            <div className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-purple-700">
-                              🔒 Login / Upgrade untuk akses penuh →
-                            </div>
-                            <div className="absolute inset-0 rounded-2xl bg-purple-500/5 pointer-events-none" />
-                          </Link>
-                        )
-                      }
-
-                      // Exam member-only → member aktif dapat Link penuh
-                      return (
-                        <Link
-                          key={exam.id}
-                          to={`/exam/${exam.id}`}
-                          className="
-                            relative p-5 rounded-2xl border
-                            transition hover:shadow-lg hover:-translate-y-1
-                            bg-gradient-to-br from-purple-50 to-white border-purple-300
-                          "
-                        >
-                          <div className="absolute top-3 right-3 bg-purple-600 text-white text-[10px] font-semibold px-2 py-1 rounded-full tracking-wide">
-                            KHUSUS MEMBER
-                          </div>
-                          <div className="w-8 h-8 rounded-full flex items-center justify-center mb-3 bg-purple-100 text-purple-600">
-                            ✏️
-                          </div>
-                          <div className="font-semibold text-gray-800 leading-snug">
-                            {exam.title}
-                          </div>
-                          <div className="mt-2 text-sm text-gray-600">
-                            Latihan eksklusif dengan pembahasan lengkap
-                          </div>
-                          <div className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-green-700">
-                            ✅ Akses terbuka untuk Member
-                          </div>
-                        </Link>
-                      )
-                    })}
+                    {searchResults.map(exam => (
+                      <Link
+                        key={exam.id}
+                        to={`/exam/${exam.id}`}
+                        className="p-5 rounded-2xl border bg-white hover:shadow-lg"
+                      >
+                        <div className="font-semibold text-gray-800">
+                          {exam.title}
+                        </div>
+                        <div className="text-xs text-blue-600 mt-2">
+                          Kerjakan Sekarang →
+                        </div>
+                      </Link>
+                    ))}
                   </div>
+                ) : (
+                  <p className="text-gray-500 italic">
+                    Tidak ditemukan hasil untuk "{search}"
+                  </p>
+                )}
+              </section>
+            ) : (
+              <>
+                {/* ===== KONTEN NORMAL CATEGORY ===== */}
+                <h1 className="text-3xl font-bold mb-2">{category.name}</h1>
 
-                </section>
-              )
-            })}
+                {category.description && (
+                  <p className="text-gray-600 max-w-2xl mb-8">
+                    {category.description}
+                  </p>
+                )}
+
+                {subCategories.map(sub => {
+                  const exams = examSets.filter(e => e.sub_category_id === sub.id)
+                  if (!exams.length) return null
+
+                  return (
+                    <section key={sub.id} id={slugify(sub.name)}>
+                      <h2 className="text-lg font-semibold text-blue-600 mb-3">
+                        {sub.name}
+                      </h2>
+                      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {exams.map(exam => {
+                          const isMemberOnly = exam.is_member_only
+                          const isLocked = isMemberOnly && !isMemberActive
+
+                          // Exam publik → selalu bisa diakses
+                          if (!isMemberOnly) {
+                            return (
+                              <Link
+                                key={exam.id}
+                                to={`/exam/${exam.id}`}
+                                className="
+                                  relative p-5 rounded-2xl border
+                                  transition hover:shadow-lg hover:-translate-y-1
+                                  bg-white
+                                "
+                              >
+                                <div className="w-8 h-8 rounded-full flex items-center justify-center mb-3 bg-blue-100 text-blue-600">
+                                  ✏️
+                                </div>
+                                <div className="font-semibold text-gray-800 leading-snug">
+                                  {exam.title}
+                                </div>
+                                <div className="mt-2 text-xs text-blue-600">
+                                  Kerjakan Sekarang →
+                                </div>
+                              </Link>
+                            )
+                          }
+
+                          // Exam member-only tapi user belum aktif → teaser yang bisa diklik ke /upgrade
+                          if (isLocked) {
+                            return (
+                              <Link
+                                key={exam.id}
+                                to="/upgrade"
+                                className="
+                                  relative p-5 rounded-2xl border
+                                  transition hover:shadow-lg hover:-translate-y-1
+                                  bg-gradient-to-br from-purple-50 to-white border-purple-300
+                                "
+                              >
+                                <div className="absolute top-3 right-3 bg-purple-600 text-white text-[10px] font-semibold px-2 py-1 rounded-full tracking-wide">
+                                  KHUSUS MEMBER
+                                </div>
+                                <div className="w-8 h-8 rounded-full flex items-center justify-center mb-3 bg-purple-100 text-purple-600">
+                                  ✏️
+                                </div>
+                                <div className="font-semibold text-gray-800 leading-snug">
+                                  {exam.title}
+                                </div>
+                                <div className="mt-2 text-sm text-gray-600">
+                                  Latihan eksklusif dengan pembahasan lengkap
+                                </div>
+                                <div className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-purple-700">
+                                  🔒 Login / Upgrade untuk akses penuh →
+                                </div>
+                                <div className="absolute inset-0 rounded-2xl bg-purple-500/5 pointer-events-none" />
+                              </Link>
+                            )
+                          }
+
+                          // Exam member-only → member aktif dapat Link penuh
+                          return (
+                            <Link
+                              key={exam.id}
+                              to={`/exam/${exam.id}`}
+                              className="
+                                relative p-5 rounded-2xl border
+                                transition hover:shadow-lg hover:-translate-y-1
+                                bg-gradient-to-br from-purple-50 to-white border-purple-300
+                              "
+                            >
+                              <div className="absolute top-3 right-3 bg-purple-600 text-white text-[10px] font-semibold px-2 py-1 rounded-full tracking-wide">
+                                KHUSUS MEMBER
+                              </div>
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center mb-3 bg-purple-100 text-purple-600">
+                                ✏️
+                              </div>
+                              <div className="font-semibold text-gray-800 leading-snug">
+                                {exam.title}
+                              </div>
+                              <div className="mt-2 text-sm text-gray-600">
+                                Latihan eksklusif dengan pembahasan lengkap
+                              </div>
+                              <div className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-green-700">
+                                ✅ Akses terbuka untuk Member
+                              </div>
+                            </Link>
+                          )
+                        })}
+                      </div>
+
+                    </section>
+                  )
+                })}
+                <RequestSoalWA />
+              </>
+              )}
               <div className="mt-10 text-sm text-gray-500">
               <Link to="/blog" className="hover:text-blue-600">
                 Baca artikel kami →
