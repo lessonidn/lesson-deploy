@@ -29,10 +29,6 @@ export default function AdminLogin() {
       return
     }
 
-    // Debug: cek JWT
-    console.log('JWT:', data.session?.access_token)
-    console.log('User:', data.session?.user)
-
     navigate('/admin')
   }
 
