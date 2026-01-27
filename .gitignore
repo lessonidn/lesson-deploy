@@ -26,7 +26,7 @@ dist-ssr
 # ===========================
 # Environment variables (SECURITY)
 # ===========================
-#.env
-#.env.*
-#supabase/.env
-#supabase/.env.*
+.env
+.env.*
+supabase/.env
+supabase/.env.*
