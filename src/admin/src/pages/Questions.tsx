@@ -19,7 +19,6 @@ import { uploadImageAsWebP } from '../hooks/useImageUpload'
 import { supabase } from '../../../../src/lib/supabase'
 import MediaPickerModal from '../components/media/MediaPickerModal'
 
-
 type ExamSet = {
   id: string
   title: string
@@ -99,6 +98,7 @@ export default function Questions() {
   // -- fitur copy soal ---
   const [copySource, setCopySource] = useState<Question | null>(null)
   const [copyTargetSetId, setCopyTargetSetId] = useState('')
+  const [copying, setCopying] = useState(false)
 
   const unicodeSymbols = [
     "√", "∛", "∜", "∑", "π", "∞", "Δ", "Ω",
@@ -480,52 +480,50 @@ export default function Questions() {
 
               <div className="flex gap-2">
                 <button
+                  disabled={copying}
                   onClick={async () => {
-                    if (!copyTargetSetId) {
-                      alert('Pilih lembar tujuan dulu')
-                      return
+                    if (copying) return
+                    setCopying(true)
+
+                    try {
+                      if (!copyTargetSetId) {
+                        alert('Pilih lembar tujuan dulu')
+                        return
+                      }
+
+                      const { data, error } = await supabase.rpc(
+                        'copy_question_with_choices',
+                        {
+                          p_source_question_id: copySource!.id,
+                          p_target_exam_set_id: copyTargetSetId,
+                        }
+                      )
+
+                      if (error) throw error
+
+                      setItems(prev => [
+                        {
+                          id: data,
+                          text: copySource!.text,
+                          exam_set_id: copyTargetSetId,
+                          exam_title:
+                            sets.find(s => s.id === copyTargetSetId)?.title || '',
+                        },
+                        ...prev,
+                      ])
+
+                      alert('Soal + semua jawaban berhasil dicopy')
+                      setCopySource(null)
+                      setCopyTargetSetId('')
+                    } finally {
+                      setCopying(false)
                     }
-
-                    // ✅ buat soal baru di lembar tujuan
-                    const { data: newQuestionData, error: newQuestionError } = await createQuestion(
-                      copySource!.text,
-                      copyTargetSetId
-                    )
-
-                    if (newQuestionError) {
-                      alert(`Gagal membuat soal baru: ${newQuestionError.message}`)
-                      return
-                    }
-
-                    // Supabase bisa return array atau single object tergantung implementasi quizApi
-                    const newQuestion =
-                      Array.isArray(newQuestionData) ? newQuestionData[0] : newQuestionData
-
-                    if (!newQuestion?.id) {
-                      alert('Gagal mendapatkan ID soal baru setelah insert.')
-                      return
-                    }
-
-                    // ✅ langsung update state items agar soal baru muncul tanpa reload
-                    setItems(prev => [
-                      { 
-                        id: newQuestion.id,
-                        text: newQuestion.text,
-                        exam_set_id: newQuestion.exam_set_id,
-                        exam_title: sets.find(s => s.id === newQuestion.exam_set_id)?.title || ''
-                      },
-                      ...prev
-                    ])
-
-                    alert('Soal berhasil dicopy ke lembar tujuan')
-
-                    // reset state modal
-                    setCopySource(null)
-                    setCopyTargetSetId('')
                   }}
-                  className="bg-indigo-600 text-white px-4 py-2 rounded"
+                  className={`px-4 py-2 rounded text-white transition ${
+                    copying ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600'
+                  }`}
                 >
-                  Confirm Copy
+                  {copying ? 'Copying...' : 'Confirm Copy'}
                 </button>
                 <button
                   onClick={() => {

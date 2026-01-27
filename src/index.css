@@ -93,3 +93,20 @@
 .glow-son {
   animation: glowSoft 3s ease-in-out infinite;
 }
+
+/* ===========================
+   Explanation: jarak lebih renggang
+   =========================== */
+.explanation-content p {
+  margin-top: 0.4rem;
+  margin-bottom: 0.4rem;
+  line-height: 1.7;
+}
+
+/* KaTeX ikut “bernapas” */
+.explanation-content .katex {
+  line-height: 2.5;
+}
+
+
+

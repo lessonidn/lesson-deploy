@@ -299,7 +299,7 @@ export default function ResultPage() {
 
 
                     {c.is_correct && c.explanation && (
-                      <div className="mt-3 rounded-lg bg-gray-50 border px-3 py-2 text-sm">
+                      <div className="explanation-content mt-3 rounded-lg bg-gray-50 border px-3 py-2 text-sm">
                         <div className="font-semibold text-gray-700 mb-4 border-b-2 border-indigo-100">
                           Penjelasan:
                         </div>
