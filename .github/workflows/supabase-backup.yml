@@ -18,7 +18,8 @@ jobs:
 
       - name: Dump Supabase database
         env:
-          PGHOST: ${{ secrets.SUPABASE_DB_HOST }}
+          PGHOSTADDR: ${{ secrets.SUPABASE_DB_HOST_IPV4 }}
+          PGHOST: db.supabase.internal
           PGPORT: 5432
           PGDATABASE: postgres
           PGUSER: postgres
