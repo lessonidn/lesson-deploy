@@ -2,29 +2,36 @@ name: Supabase Daily Backup
 
 on:
   schedule:
-    # ⏰ Setiap hari jam 02:00 UTC
+    # Jalan setiap hari jam 02:00 UTC
     - cron: '0 2 * * *'
-  workflow_dispatch: # bisa manual run
+  workflow_dispatch:
 
 jobs:
   backup:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Install dependencies
+      - name: Install PostgreSQL client
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client curl
 
       - name: Dump Supabase database
         env:
-          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
+          PGHOST: ${{ secrets.SUPABASE_DB_HOST }}
+          PGPORT: 5432
+          PGDATABASE: postgres
+          PGUSER: postgres
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PGSSLMODE: require
         run: |
-          pg_dump "$DATABASE_URL" \
+          echo "Starting pg_dump..."
+          pg_dump \
             --format=plain \
             --no-owner \
             --no-privileges \
             > backup.sql
+          echo "pg_dump finished"
 
       - name: Upload daily backup (overwrite)
         env:
@@ -32,10 +39,12 @@ jobs:
           SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           BUCKET: ${{ secrets.SUPABASE_BUCKET }}
         run: |
-          curl -X PUT "$SUPABASE_URL/storage/v1/object/$BUCKET/backup-latest.sql" \
+          echo "Uploading backup to Supabase Storage..."
+          curl -v -X PUT "$SUPABASE_URL/storage/v1/object/$BUCKET/backup-latest.sql" \
             -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
             -H "Content-Type: application/sql" \
             --data-binary @backup.sql
+          echo "Upload finished"
 
       - name: Upload weekly backup (Sunday only)
         if: ${{ github.event.schedule == '0 2 * * 0' }}
@@ -44,7 +53,9 @@ jobs:
           SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           BUCKET: ${{ secrets.SUPABASE_BUCKET }}
         run: |
-          curl -X PUT "$SUPABASE_URL/storage/v1/object/$BUCKET/backup-weekly.sql" \
+          echo "Uploading weekly backup..."
+          curl -v -X PUT "$SUPABASE_URL/storage/v1/object/$BUCKET/backup-weekly.sql" \
             -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
             -H "Content-Type: application/sql" \
             --data-binary @backup.sql
+          echo "Weekly upload finished"
