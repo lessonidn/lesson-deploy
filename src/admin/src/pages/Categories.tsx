@@ -13,6 +13,7 @@ import {
   DropResult,
 } from '@hello-pangea/dnd'
 import { supabase } from '../../../lib/supabase'
+import { uploadImageAsWebP } from '../hooks/useImageUpload'
 import CategoryMediaPicker from '../components/media/CategoryMediaPicker'
 
 type Category = {
@@ -176,21 +177,6 @@ export default function Categories() {
   }
 
   /* ================= UPLOAD BANNER ================= */
-  async function uploadBanner(file: File) {
-    const ext = file.name.split('.').pop()
-    const fileName = `${crypto.randomUUID()}.${ext}`
-    const filePath = `categories/${fileName}`
-
-    const { error } = await supabase.storage
-      .from('media')
-      .upload(filePath, file, { upsert: true })
-
-    if (error) throw error
-
-    // ⬅️ SIMPAN PATH SAJA
-    return filePath
-  }
-
   async function handleUploadBanner(
     e: React.ChangeEvent<HTMLInputElement>
   ) {
@@ -198,12 +184,15 @@ export default function Categories() {
     if (!file) return
 
     try {
-      const path = await uploadBanner(file)
+      // ⬅️ INI YANG SAMA DENGAN QUESTIONS
+      const path = await uploadImageAsWebP(file, 'categories')
+
+      // path = "categories/uuid.webp"
       setBannerImage(path)
     } catch (err) {
       console.error('Upload banner gagal:', err)
     } finally {
-      e.target.value = '' // reset input
+      e.target.value = ''
     }
   }
 
@@ -360,8 +349,6 @@ export default function Categories() {
                               setName(c.name)
                               setDescription(c.description || '')
                               setBannerImage(c.banner_image || null)
-
-                              window.scrollTo({ top: 0, behavior: 'smooth' })
                             }}
                             className="px-2 py-1 bg-yellow-500 text-white rounded"
                           >
