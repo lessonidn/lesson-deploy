@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../../../src/lib/supabase'
+import { deleteImageFromSupabase } from '../lib/deleteImage'
 
 type MediaFile = {
   name: string
@@ -60,14 +61,23 @@ export default function Media() {
   async function deleteMedia(path: string) {
     if (!confirm('Yakin ingin menghapus gambar ini?')) return
 
-    const { error } = await supabase.storage.from('media').remove([path])
+    const result = await deleteImageFromSupabase(path)
 
-    if (error) {
-      console.error('Delete error:', error)
-      alert(`Gagal hapus: ${error.message}`)
-    } else {
-      setFiles(prev => prev.filter(f => f.path !== path))
-    }
+      if (!result.ok) {
+        if (result.usedBy.length > 0) {
+          alert(
+            '❗ Gambar masih dipakai soal:\n\n' +
+              result.usedBy
+                .map(q => `• ${q.preview} (ID: ${q.id.slice(0, 8)})`)
+                .join('\n')
+          )
+        } else {
+          alert('❗ Gambar tidak bisa dihapus.')
+        }
+        return
+      }
+
+    setFiles(prev => prev.filter(f => f.path !== path))
   }
 
   useEffect(() => {

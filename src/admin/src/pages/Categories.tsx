@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
   getCategories,
-  createCategory,
-  updateCategory,
   softDeleteCategory,
   togglePublishExamSet,
   reorderCategories,
@@ -15,6 +13,7 @@ import {
   DropResult,
 } from '@hello-pangea/dnd'
 import { supabase } from '../../../lib/supabase'
+import CategoryMediaPicker from '../components/media/CategoryMediaPicker'
 
 type Category = {
   id: string
@@ -35,6 +34,7 @@ export default function Categories() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const { canClick } = usePreventDoubleClick()
+  const [showMediaPicker, setShowMediaPicker] = useState(false)
 
   /* ================= LOAD ================= */
   async function load() {
@@ -64,20 +64,69 @@ export default function Categories() {
     if (!name) return
     if (!canClick()) return
 
+    const slugValue = slugify(name)
+
     const payload = {
       name,
-      description,
-      banner_image: bannerImage,
+      slug: slugValue,
+      description: description || null,
+      banner_image: bannerImage || null,
+      is_deleted: false,
+      is_published: true,
     }
 
+    // =========================
+    // EDIT MODE (AMAN)
+    // =========================
     if (editId) {
-      const { error } = await updateCategory(editId, payload)
-      if (error) setError(error.message)
-      setEditId(null)
-    } else {
-      const { error } = await createCategory(payload)
-      if (error) setError(error.message)
+      await supabase
+        .from('categories')
+        .update(payload)
+        .eq('id', editId)
+
+      resetForm()
+      load()
+      return
     }
+
+    // =========================
+    // CREATE / RESTORE MODE
+    // =========================
+
+    // 1️⃣ cek apakah slug sudah pernah ada
+    const { data: existing, error } = await supabase
+      .from('categories')
+      .select('id, is_deleted')
+      .eq('slug', slugValue)
+      .maybeSingle()
+
+    if (error) {
+      console.error(error)
+      return
+    }
+
+    // 2️⃣ kalau ada & pernah dihapus → RESTORE
+    if (existing && existing.is_deleted) {
+      await supabase
+        .from('categories')
+        .update(payload)
+        .eq('id', existing.id)
+
+      resetForm()
+      load()
+      return
+    }
+
+    // 3️⃣ kalau ada & masih aktif → TOLAK
+    if (existing && !existing.is_deleted) {
+      alert('Kategori dengan nama ini sudah ada')
+      return
+    }
+
+    // 4️⃣ benar-benar baru → INSERT
+    await supabase
+      .from('categories')
+      .insert(payload)
 
     resetForm()
     load()
@@ -130,20 +179,51 @@ export default function Categories() {
   async function uploadBanner(file: File) {
     const ext = file.name.split('.').pop()
     const fileName = `${crypto.randomUUID()}.${ext}`
-    const filePath = `banners/${fileName}`
+    const filePath = `categories/${fileName}`
 
     const { error } = await supabase.storage
-      .from('categories')
+      .from('media')
       .upload(filePath, file, { upsert: true })
 
     if (error) throw error
 
-    const { data } = supabase.storage
-      .from('categories')
-      .getPublicUrl(filePath)
+    // ⬅️ SIMPAN PATH SAJA
+    return filePath
+  }
 
+  async function handleUploadBanner(
+    e: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    try {
+      const path = await uploadBanner(file)
+      setBannerImage(path)
+    } catch (err) {
+      console.error('Upload banner gagal:', err)
+    } finally {
+      e.target.value = '' // reset input
+    }
+  }
+
+  // HELPER PUBLIC URL
+  function getPublicImageUrl(path: string) {
+    const { data } = supabase.storage
+      .from('media')
+      .getPublicUrl(path)
     return data.publicUrl
   }
+
+  function slugify(text: string) {
+    return text
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+  }
+
+
 
   /* ================= RENDER ================= */
   return (
@@ -166,24 +246,48 @@ export default function Categories() {
           onChange={e => setDescription(e.target.value)}
         />
 
-        <input
-          type="file"
-          accept="image/*"
-          onChange={async e => {
-            const file = e.target.files?.[0]
-            if (!file) return
-            const url = await uploadBanner(file)
-            setBannerImage(url)
+        {/* ACTION IMAGE */}
+        <div className="flex gap-2 mt-2">
+          {/* Upload baru */}
+          <label className="px-3 py-1 rounded bg-gray-200 cursor-pointer text-sm">
+            Upload Gambar
+            <input
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={handleUploadBanner}
+            />
+          </label>
+
+          {/* Pilih dari media */}
+          <button
+            type="button"
+            onClick={() => setShowMediaPicker(true)}
+            className="px-3 py-1 rounded bg-indigo-600 text-white text-sm"
+          >
+            Pilih dari Media
+          </button>
+        </div>
+
+        {/* MEDIA PICKER */}
+        <CategoryMediaPicker
+          open={showMediaPicker}
+          onClose={() => setShowMediaPicker(false)}
+          onSelect={(path) => {
+            // path = categories/xxx.webp
+            setBannerImage(path)
           }}
         />
 
+        {/* PREVIEW */}
         {bannerImage && (
           <img
-            src={bannerImage}
+            src={getPublicImageUrl(bannerImage)}
             className="h-32 rounded object-cover border"
           />
         )}
 
+        {/* ACTION BUTTON */}
         <div className="flex gap-2">
           <button
             onClick={save}
@@ -256,6 +360,8 @@ export default function Categories() {
                               setName(c.name)
                               setDescription(c.description || '')
                               setBannerImage(c.banner_image || null)
+
+                              window.scrollTo({ top: 0, behavior: 'smooth' })
                             }}
                             className="px-2 py-1 bg-yellow-500 text-white rounded"
                           >

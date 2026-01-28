@@ -38,6 +38,14 @@ export default function CategoryIndexPage() {
     )
   }
 
+  // RENDER GAMBAR CATEGORIES
+  function getPublicImageUrl(path: string) {
+    const { data } = supabase.storage
+      .from('media')
+      .getPublicUrl(path)
+    return data.publicUrl
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* ================= HEADER ================= */}
@@ -90,7 +98,7 @@ export default function CategoryIndexPage() {
             >
               {cat.banner_image ? (
                 <img
-                  src={cat.banner_image}
+                  src={getPublicImageUrl(cat.banner_image)}
                   alt={cat.name}
                   className="h-40 w-full object-cover group-hover:scale-105 transition"
                 />
@@ -101,7 +109,6 @@ export default function CategoryIndexPage() {
                   </span>
                 </div>
               )}
-
               <div className="p-5">
                 <h2 className="font-bold text-lg text-gray-800 mb-1">
                   {cat.name}

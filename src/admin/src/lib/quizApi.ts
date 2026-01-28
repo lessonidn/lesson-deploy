@@ -8,9 +8,18 @@ import { supabase } from '../../../lib/supabase'
 export async function getCategories() {
   return supabase
     .from('categories')
-    .select('id, name, slug, is_published')
+    .select(`
+      id,
+      name,
+      slug,
+      description,
+      banner_image,
+      is_deleted,
+      is_published,
+      order_index
+    `)
     .eq('is_deleted', false)
-    .order('name')
+    .order('order_index', { ascending: true })
 }
 
 /* ================= CREATE ================= */
@@ -315,19 +324,34 @@ export async function getQuestions(examSetId?: string) {
 }
 
 // Tambah question baru
-export async function createQuestion(text: string, examSetId: string) {
+export async function createQuestion(
+  text: string,
+  examSetId: string,
+  imagePaths: string[]
+) {
   return supabase
     .from('questions')
-    .insert([{ text, exam_set_id: examSetId }])
-    .select()
-    .single()
+    .insert({
+      text,
+      exam_set_id: examSetId,
+      image_paths: Array.isArray(imagePaths) ? imagePaths : [],
+    })
 }
 
 // Update question (text + exam_set_id)
-export async function updateQuestion(id: string, text: string, exam_set_id: string) {
+export async function updateQuestion(
+  id: string,
+  text: string,
+  examSetId: string,
+  imagePaths: string[]
+) {
   return supabase
     .from('questions')
-    .update({ text, exam_set_id })
+    .update({
+      text,
+      exam_set_id: examSetId,
+      image_paths: Array.isArray(imagePaths) ? imagePaths : [],
+    })
     .eq('id', id)
 }
 
@@ -391,4 +415,23 @@ export async function reorderCategories(
   )
 
   return Promise.all(promises)
+}
+
+export async function isImageUsedByOtherQuestions(
+  imageUrl: string,
+  excludeQuestionId?: string
+): Promise<boolean> {
+  let query = supabase
+    .from('questions')
+    .select('id, text')
+
+  if (excludeQuestionId) {
+    query = query.neq('id', excludeQuestionId)
+  }
+
+  const { data, error } = await query
+
+  if (error || !data) return false
+
+  return data.some(q => q.text.includes(imageUrl))
 }

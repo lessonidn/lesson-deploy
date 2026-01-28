@@ -10,12 +10,10 @@ type BucketUsage = {
 type ExamStat = {
   exam_id: string
   exam_label: string
+  activity_date: string | null
   total_attempts: number
   total_finished: number
-  first_attempt_at: string | null
-  last_attempt_at: string | null
 }
-
 
 export default function Dashboard() {
   const [catCount, setCatCount] = useState(0)
@@ -229,7 +227,7 @@ export default function Dashboard() {
 
                 return (
                   <tr
-                    key={row.exam_id}
+                    key={`${row.exam_id}-${row.activity_date}`}
                     className={`border-t ${
                       isProblematic ? 'bg-red-50' : ''
                     }`}

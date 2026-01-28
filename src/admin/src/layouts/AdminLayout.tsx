@@ -67,12 +67,14 @@ export default function AdminLayout() {
       <div className="flex flex-col flex-1">
         {/* Topbar */}
         <header className="h-14 bg-white border-b flex items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-2">
-            <img src={logo} alt="Logo" className="h-8 w-auto" />
-            <span className="font-semibold text-sm sm:text-base">
-              Lesson.Idn
-            </span>
-          </div>
+         <a href="/" target="_blank" rel="noopener noreferrer" className="inline-block">
+            <div className="flex items-center gap-2">
+              <img src={logo} alt="Logo" className="h-8 w-auto" />
+              <span className="font-semibold text-sm sm:text-base">
+                Lesson.Idn
+              </span>
+            </div>
+          </a>
 
           <div className="flex items-center gap-3">
             {/* Logout */}

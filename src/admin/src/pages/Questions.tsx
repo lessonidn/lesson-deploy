@@ -38,6 +38,7 @@ type Question = {
   text: string
   exam_set_id: string
   exam_title: string
+  image_paths?: string[]   // ⬅️ TAMBAHKAN INI
   exam_set?: ExamSet
 }
 
@@ -94,6 +95,7 @@ export default function Questions() {
   const { canClick } = usePreventDoubleClick()
   const [search, setSearch] = useState('')
   const [showMediaPicker, setShowMediaPicker] = useState(false)
+  const [usedImagePaths, setUsedImagePaths] = useState<string[]>([])
 
   // -- fitur copy soal ---
   const [copySource, setCopySource] = useState<Question | null>(null)
@@ -127,6 +129,11 @@ export default function Questions() {
     if (!text) return
     if (!canClick()) return
 
+    // ⬇️ PINDAHKAN KE SINI
+    const safeImagePaths = Array.isArray(usedImagePaths)
+      ? usedImagePaths
+      : []
+
     if (editId) {
       const oldQuestion = items.find(q => q.id === editId)
       if (oldQuestion) {
@@ -135,16 +142,16 @@ export default function Questions() {
         while ((match = regex.exec(oldQuestion.text)) !== null) {
           const oldUrl = match[1]
           if (!text.includes(oldUrl)) {
-            await deleteImageFromSupabase(publicUrlToPath(oldUrl))
+            await deleteImageFromSupabase(publicUrlToPath(oldUrl) )
           }
         }
       }
 
-      const { error } = await updateQuestion(editId, text, setId)
+      const { error } = await updateQuestion(editId, text, setId, safeImagePaths)
       if (error) setError(error.message)
       setEditId(null)
     } else {
-      const { error } = await createQuestion(text, setId)
+      const { error } = await createQuestion(text, setId, safeImagePaths)
       if (error) setError(error.message)
     }
 
@@ -269,6 +276,9 @@ export default function Questions() {
                   if (!file) return
 
                   const path = await uploadImageAsWebP(file, 'questions')
+
+                  setUsedImagePaths(prev => [...new Set([...prev, path])])
+
                   const { data } = supabase.storage
                     .from('media')
                     .getPublicUrl(path)
@@ -295,6 +305,14 @@ export default function Questions() {
               onClose={() => setShowMediaPicker(false)}
               onSelect={(url) => {
                 setShowMediaPicker(false)
+
+                // ⬇️ ambil path dari public URL
+                const path = publicUrlToPath(url)
+
+                // ⬇️ CATAT GAMBAR DIPAKAI SOAL INI
+                setUsedImagePaths(prev => [...new Set([...prev, path])])
+
+                // ⬇️ tetap insert ke editor (tidak berubah)
                 editor?.chain().focus().insertContent({
                   type: 'customImage',
                   attrs: { src: url, width: 200, height: 150 },
@@ -431,10 +449,14 @@ export default function Questions() {
                       setEditId(q.id)
                       setText(q.text)
                       setSetId(q.exam_set_id)
+
+                      // ⬇️ INI PENTING
+                      setUsedImagePaths(q.image_paths || [])
+
                       editor?.commands.setContent(q.text)
                       window.scrollTo({ top: 0, behavior: 'smooth' })
                     }}
-                    className="px-2 py-1 bg-yellow-500 text-white rounded text-sm"
+                      className="px-2 py-1 bg-yellow-500 text-white rounded text-sm"
                   >
                     Edit
                   </button>

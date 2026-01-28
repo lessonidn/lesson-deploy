@@ -1,24 +1,51 @@
 import { supabase } from '../../../lib/supabase'
 
+type DeleteImageResult =
+  | { ok: true }
+  | { ok: false; usedBy: { id: string; preview: string }[] }
+
 /**
- * Hapus file dari Supabase Storage berdasarkan URL public
+ * Delete image safely.
+ * Jika masih dipakai soal → return daftar soal
  */
-export async function deleteImageFromSupabase(url: string) {
+export async function deleteImageFromSupabase(
+  imagePath: string
+): Promise<DeleteImageResult> {
   try {
-    // URL public: https://<project>.supabase.co/storage/v1/object/public/questions/images/<filename>.webp
-    const u = new URL(url)
-    const path = u.pathname.replace('/storage/v1/object/public/questions/', '')
-    if (!path) throw new Error('URL tidak valid')
-
-    const { error } = await supabase.storage
+    const { data, error } = await supabase
       .from('questions')
-      .remove([path])
+      .select('id, text')
+      .contains('image_paths', [imagePath])
 
-    if (error) throw error
-    console.log('File dihapus:', path)
-    return true
+    if (error) {
+      console.error('Error cek pemakaian gambar:', error)
+      return { ok: false, usedBy: [] }
+    }
+
+    if (data && data.length > 0) {
+      return {
+        ok: false,
+        usedBy: data.map(q => ({
+          id: q.id,
+          preview: q.text
+            .replace(/<[^>]+>/g, '') // strip HTML
+            .slice(0, 80) + '...',
+        })),
+      }
+    }
+
+    const { error: deleteError } = await supabase.storage
+      .from('media')
+      .remove([imagePath])
+
+    if (deleteError) {
+      console.error('Gagal hapus file:', deleteError)
+      return { ok: false, usedBy: [] }
+    }
+
+    return { ok: true }
   } catch (err) {
-    console.error('Gagal hapus file:', err)
-    return false
+    console.error('Delete image error:', err)
+    return { ok: false, usedBy: [] }
   }
 }

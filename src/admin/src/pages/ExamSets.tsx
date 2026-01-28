@@ -32,6 +32,15 @@ type ExamSet = {
   }
 }
 
+function slugify(text: string) {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+}
+
 // ================= COMPONENT =================
 export default function ExamSets() {
   const [subs, setSubs] = useState<SubCategory[]>([])
@@ -85,9 +94,11 @@ export default function ExamSets() {
 
     const payload = {
       title,
+      slug: slugify(title), // ✅ WAJIB
       sub_category_id: subId,
       duration_minutes: durationMinutes || 30,
     }
+
 
     if (editId) {
       const { error } = await updateExamSet(editId, payload)
