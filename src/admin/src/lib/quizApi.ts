@@ -313,43 +313,46 @@ export async function getAdminExamSets() {
 /* =========================
    4. Questions
    ========================= */
-  type QuestionRow = {
-    id: string
-  }
+export async function getQuestions(examSetId?: string) {
+  let query = supabase
+    .from('questions_with_exam')
+    .select('id, text, exam_set_id, exam_title')
+    .order('id')
 
-  export async function getQuestions(examSetId?: string) {
-    const pageSize = 1000
-    const allData: QuestionRow[] = []
-    let from = 0
-    let to = pageSize - 1
-    let hasMore = true
+  if (examSetId) query = query.eq('exam_set_id', examSetId)
+  return query
+}
 
-    while (hasMore) {
-      let query = supabase
-        .from('questions_with_exam')
-        .select('id')
-        .order('id')
-        .range(from, to)
+type QuestionRow = { id: string }
 
-      if (examSetId) {
-        query = query.eq('exam_set_id', examSetId)
-      }
+export async function getQuestionsCount() {
+  const pageSize = 1000
+  const allData: QuestionRow[] = []
+  let from = 0
+  let to = pageSize - 1
+  let hasMore = true
 
-      const { data, error } = await query
-      if (error) return { data: null, error }
+  while (hasMore) {
+    const { data, error } = await supabase
+      .from('questions')
+      .select('id')
+      .range(from, to)
 
-      allData.push(...(data ?? []))
+    if (error) return { count: 0, error }
 
-      if (!data || data.length < pageSize) {
-        hasMore = false
-      } else {
-        from += pageSize
-        to += pageSize
-      }
+    allData.push(...(data ?? []))
+
+    if (!data || data.length < pageSize) {
+      hasMore = false
+    } else {
+      from += pageSize
+      to += pageSize
     }
-
-    return { data: allData, error: null }
   }
+
+  return { count: allData.length, error: null }
+}
+
 
 // Tambah question baru
 export async function createQuestion(

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { getCategories, getSubCategories, getExamSets, getQuestions } from '../lib/quizApi'
+import { getCategories, getSubCategories, getExamSets, getQuestionsCount } from '../lib/quizApi'
 import { supabase } from '../../../../src/lib/supabase'
 
 type BucketUsage = {
@@ -89,8 +89,13 @@ export default function Dashboard() {
       const { data: cats, error: catErr } = await getCategories()
       const { data: subs, error: subErr } = await getSubCategories()
       const { data: exams, error: examErr } = await getExamSets()
-      const { data: questions, error: qErr } = await getQuestions()
-      const { data: usage, error: usageErr } = await supabase.rpc('get_bucket_usage')
+
+      // ✅ TAMBAHKAN INI
+      const { count: questionTotal, error: qErr } = await getQuestionsCount()
+
+      const { data: usage, error: usageErr } =
+        await supabase.rpc('get_bucket_usage')
+
 
       if (catErr || subErr || examErr || qErr || usageErr) {
         setError(
@@ -107,7 +112,7 @@ export default function Dashboard() {
       setCatCount(cats?.length || 0)
       setSubCount(subs?.length || 0)
       setExamCount(exams?.length || 0)
-      setQuestionCount(questions?.length || 0)
+      setQuestionCount(questionTotal)
 
       setStorageUsage(
         (usage as BucketUsage[])?.map(u => ({
