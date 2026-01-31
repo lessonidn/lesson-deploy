@@ -313,15 +313,43 @@ export async function getAdminExamSets() {
 /* =========================
    4. Questions
    ========================= */
-export async function getQuestions(examSetId?: string) {
-  let query = supabase
-    .from('questions_with_exam')
-    .select('id, text, exam_set_id, exam_title')
-    .order('id')
+  type QuestionRow = {
+    id: string
+  }
 
-  if (examSetId) query = query.eq('exam_set_id', examSetId)
-  return query
-}
+  export async function getQuestions(examSetId?: string) {
+    const pageSize = 1000
+    const allData: QuestionRow[] = []
+    let from = 0
+    let to = pageSize - 1
+    let hasMore = true
+
+    while (hasMore) {
+      let query = supabase
+        .from('questions_with_exam')
+        .select('id')
+        .order('id')
+        .range(from, to)
+
+      if (examSetId) {
+        query = query.eq('exam_set_id', examSetId)
+      }
+
+      const { data, error } = await query
+      if (error) return { data: null, error }
+
+      allData.push(...(data ?? []))
+
+      if (!data || data.length < pageSize) {
+        hasMore = false
+      } else {
+        from += pageSize
+        to += pageSize
+      }
+    }
+
+    return { data: allData, error: null }
+  }
 
 // Tambah question baru
 export async function createQuestion(
