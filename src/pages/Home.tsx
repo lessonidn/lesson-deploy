@@ -145,7 +145,11 @@ export default function Home() {
   const isMemberActive = profile?.membership_status === 'active'
 
   const [searchResults, setSearchResults] = useState<ExamSet[]>([])
+  const [pageResults, setPageResults] = useState<Page[]>([])
+
   const searchResultRef = useRef<HTMLDivElement | null>(null)
+  const [activeLatestId, setActiveLatestId] = useState<string | null>(null)
+
 
   /* ===== SEARCH HANDLER ===== */
   function handleSearch() {
@@ -157,18 +161,21 @@ export default function Home() {
 
     const results = examSets.filter(e => {
       const sub = subCategories.find(s => s.id === e.sub_category_id)
-      const examTitle = normalize(e.title)
-      const subName = normalize(sub?.name || "")
+      const examTitle = e.title
+      const subName = sub?.name || ''
 
-      if (examTitle.includes(term)) return true
-      if (subName.includes(term)) return true
-
-      const matchKelas = subName.match(/kelas\s*\d+/i)
-      if (matchKelas && normalize(matchKelas[0]).includes(term)) return true
-
-      return false
+      return (
+        wildcardMatch(examTitle, term) ||
+        wildcardMatch(subName, term)
+      )
     })
 
+    const pageMatches = latestPages.filter(p =>
+      wildcardMatch(p.title, term) ||
+      wildcardMatch(p.excerpt || '', term)
+    )
+
+    setPageResults(pageMatches)
     setSearchResults(results)
 
     // ✅ SCROLL PRESISI KE H2
@@ -384,6 +391,18 @@ export default function Home() {
   function normalize(str: string): string {
     return str.toLowerCase()
   }
+
+  // --- FUNGSI WILDCARD ---
+  function wildcardMatch(text: string, keyword: string) {
+  if (!text || !keyword) return false
+
+  const words = keyword.split(/\s+/) // support multi kata
+  const target = normalize(text)
+
+  // semua kata harus ada (AND)
+  return words.every(word => target.includes(word))
+}
+
 
   /* ================= RENDER ================= */
 
@@ -753,23 +772,45 @@ export default function Home() {
                   🔍 Hasil Pencarian: "{search}"
                 </h2>
 
-                {searchResults.length > 0 ? (
-                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {searchResults.map(exam => (
-                      <Link
-                        key={exam.id}
-                        to={`/exam/${exam.id}`}
-                        className="p-5 rounded-2xl border bg-white hover:shadow-lg"
-                      >
-                        <div className="font-semibold text-gray-800">
-                          {exam.title}
-                        </div>
-                        <div className="text-xs text-blue-600 mt-2">
-                          Kerjakan Sekarang →
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
+                {(searchResults.length > 0 || pageResults.length > 0) ? (
+                  <>
+                    {searchResults.length > 0 && (
+                      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {searchResults.map(exam => (
+                          <Link
+                            key={exam.id}
+                            to={`/exam/${exam.id}`}
+                            className="p-5 rounded-2xl border bg-white hover:shadow-lg"
+                          >
+                            <div className="font-semibold text-gray-800">
+                              {exam.title}
+                            </div>
+                            <div className="text-xs text-blue-600 mt-2">
+                              Kerjakan Sekarang →
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+
+                    {pageResults.length > 0 && (
+                      <>
+                        <h3 className="mt-6 font-semibold">📄 Artikel Terkait</h3>
+                        <ul className="mt-2 space-y-2">
+                          {pageResults.map(p => (
+                            <li key={p.id}>
+                              <Link
+                                to={`/blog/${p.slug}`}
+                                className="text-blue-600 hover:underline"
+                              >
+                                {p.title}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
+                  </>
                 ) : (
                   <p className="text-gray-500 italic">
                     Tidak ditemukan hasil untuk "{search}"
@@ -934,14 +975,94 @@ export default function Home() {
               <h4 className="font-semibold mb-3 border-b pb-2">
                 Latihan Terbaru
               </h4>
-              <ul className="space-y-2 text-sm">
-                {latestExams.map(e => (
-                  <li key={e.id}>
-                    <Link to={`/exam/${e.id}`} className="hover:text-blue-600">
-                      {e.title}
-                    </Link>
-                  </li>
-                ))}
+              <ul className="space-y-3 text-sm select-none">
+                {latestExams.map((e, index) => {
+                  const gradients = [
+                    'from-purple-500 to-fuchsia-500',
+                    'from-blue-500 to-cyan-500',
+                    'from-emerald-500 to-lime-500',
+                    'from-orange-500 to-amber-500',
+                    'from-pink-500 to-rose-500',
+                    'from-indigo-500 to-violet-500',
+                    'from-teal-500 to-emerald-500',
+                    'from-red-500 to-orange-500',
+                    'from-sky-500 to-blue-600',
+                    'from-yellow-400 to-orange-500',
+                  ]
+
+                  const gradient = gradients[index % gradients.length]
+                  const isActive = activeLatestId === e.id
+
+                  return (
+                    <li
+                      key={e.id}
+                      onMouseEnter={() => setActiveLatestId(e.id)}
+                      onMouseLeave={() => setActiveLatestId(null)}
+                      className={`
+                        relative
+                        group
+                        flex items-center gap-3 p-3 rounded-xl cursor-pointer
+                        border border-gray-100
+                        transition-all duration-300 ease-out
+                        transform
+                        ${
+                          isActive
+                            ? `bg-gradient-to-r ${gradient} text-white shadow-lg translate-x-2 scale-[1.02]`
+                            : 'bg-white text-slate-700 hover:bg-slate-50 hover:translate-x-2'
+                        }
+                      `}
+                    >
+                      {/* STRIP KIRI */}
+                      <span
+                        className={`
+                          absolute left-0 top-0 h-full w-1 rounded-l-xl
+                          transition-opacity duration-300
+                          ${
+                            isActive
+                              ? 'opacity-100 bg-white/70'
+                              : 'opacity-0 group-hover:opacity-60 bg-indigo-400'
+                          }
+                        `}
+                      />
+
+                      {/* ANGKA BULAT */}
+                      <div
+                        className={`
+                          relative z-10
+                          w-8 h-8 shrink-0
+                          rounded-full
+                          flex items-center justify-center
+                          text-xs font-bold
+                          transition-colors duration-300
+                          ${
+                            isActive
+                              ? 'bg-white text-indigo-600'
+                              : 'bg-slate-100 text-slate-500 group-hover:bg-indigo-100 group-hover:text-indigo-600'
+                          }
+                        `}
+                      >
+                        {index + 1}
+                      </div>
+
+                      {/* JUDUL */}
+                      <Link
+                        to={`/exam/${e.id}`}
+                        className={`
+                          relative z-10
+                          leading-snug font-semibold
+                          transition-colors duration-300
+                          ${
+                            isActive
+                              ? 'text-white'
+                              : 'text-slate-700 group-hover:text-indigo-700'
+                          }
+                        `}
+                      >
+                        {e.title}
+                      </Link>
+                    </li>
+                  )
+                })}
               </ul>
             </div>
 
