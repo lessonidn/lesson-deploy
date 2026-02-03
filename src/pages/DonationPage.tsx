@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
+import logo from '../asset/leaf.png'
 
 //-- SLIDER BANNER ---
 const heroSlides = [
@@ -49,7 +50,15 @@ export default function DonationPage() {
         <div className="relative max-w-6xl mx-auto px-4 py-14 text-white grid md:grid-cols-2 gap-10 items-center">
           <div>
             <h1 className="text-4xl font-extrabold tracking-wide mb-4">
-              Dukung <span className="text-sky-400 drop-shadow">LESSON</span>
+              Dukung <span className="text-white drop-shadow">LES</span>
+                <span className="text-sky-400 glow-son relative">
+                  SON
+                  <img
+                    src={logo}
+                    alt="logo daun"
+                    className="absolute -top-6 -right-3 h-7"
+                  />
+                </span>?
             </h1>
             <p className="text-gray-300 max-w-xl">
               Dukungan Anda membantu kami terus mengembangkan platform bimbel

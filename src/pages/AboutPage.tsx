@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import logo from '../asset/leaf.png'
 
 export default function AboutPage() {
   return (
@@ -24,7 +25,15 @@ export default function AboutPage() {
         <div className="relative max-w-6xl mx-auto px-4 py-14 text-white grid md:grid-cols-2 gap-10 items-center">
           <div>
             <h1 className="text-4xl font-extrabold tracking-wide mb-4">
-              Tentang <span className="text-sky-400 drop-shadow">LESSON</span>
+              Tentang <span className="text-white drop-shadow">LES</span>
+                <span className="text-sky-400 glow-son relative">
+                  SON
+                  <img
+                    src={logo}
+                    alt="logo daun"
+                    className="absolute -top-6 -right-3 h-7"
+                  />
+                </span>
             </h1>
             <p className="text-gray-300 max-w-xl">
               LESSON adalah platform bimbel online modern yang membantu siswa
@@ -101,7 +110,10 @@ export default function AboutPage() {
         {/* WHY LESSON */}
         <section>
           <h2 className="text-2xl font-bold text-gray-800 mb-6">
-            Kenapa Memilih <span className="text-sky-500">LESSON</span>?
+            Kenapa Memilih <span className="text-outline">LES</span>
+                <span className="text-sky-400 relative">
+                  SON
+                </span> ?
           </h2>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -140,7 +152,10 @@ export default function AboutPage() {
         {/* CLOSING */}
         <section className="text-center">
           <h2 className="text-2xl font-bold text-gray-800 mb-3">
-            Bersama LESSON, Belajar Jadi Lebih Terarah
+            Bersama <span className="text-outline">LES</span>
+                <span className="text-sky-400 relative">
+                  SON
+                </span>, Belajar Jadi Lebih Terarah
           </h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
             Kami percaya bahwa setiap siswa punya potensi besar. Dengan

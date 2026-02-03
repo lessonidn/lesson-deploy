@@ -241,7 +241,7 @@ export default function CategoryLandingPage() {
         .eq('is_published', true)
         .eq('is_deleted', false)
         .order('created_at', { ascending: false })
-        .limit(5),
+        .limit(10),
 
       supabase
         .from('menus')
@@ -254,7 +254,7 @@ export default function CategoryLandingPage() {
         .select('id, title, slug, excerpt')
         .eq('status', 'published')
         .order('created_at', { ascending: false })
-        .limit(3),
+        .limit(10),
 
       supabase
         .from('social_links')
