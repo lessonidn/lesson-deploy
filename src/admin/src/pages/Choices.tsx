@@ -95,6 +95,7 @@ export default function Choices() {
   const [showMediaPicker, setShowMediaPicker] = useState(false)
   const [showMediaPickerChoice, setShowMediaPickerChoice] = useState(false)
 
+  const [questionHasCorrect, setQuestionHasCorrect] = useState<Record<string, boolean>>({})
 
   const unicodeSymbols = [
     "√", "∛", "∜", "∑", "π", "∞", "Δ", "Ω",
@@ -121,8 +122,36 @@ export default function Choices() {
 
   async function loadChoices(qid: string) {
     const { data, error } = await getChoices(qid)
-    if (error) setError(error.message)
-    else setChoices(data || [])
+    if (error) {
+      setError(error.message)
+    } else {
+      const list = data || []
+      setChoices(list)
+
+      // 🔥 HITUNG APAKAH ADA KUNCI JAWABAN
+      const hasCorrect = list.some(c => c.is_correct === true)
+
+      setQuestionHasCorrect(prev => ({
+        ...prev,
+        [qid]: hasCorrect,
+      }))
+    }
+  }
+
+  async function preloadQuestionCorrectStatus(examSetId: string) {
+    const relatedQuestions = questions.filter(q => q.exam_set_id === examSetId)
+
+    for (const q of relatedQuestions) {
+      const { data } = await getChoices(q.id)
+      const list = data || []
+
+      const hasCorrect = list.some(c => c.is_correct === true)
+
+      setQuestionHasCorrect(prev => ({
+        ...prev,
+        [q.id]: hasCorrect,
+      }))
+    }
   }
 
   async function save() {
@@ -239,6 +268,13 @@ function cleanHtmlTail(html: string) {
     },
   })
 
+  // FUNGSI MUNCUL LIST QUESTION
+  const questionsWithoutCorrect = questions.filter(
+    q =>
+      q.exam_set_id === examId &&
+      questionHasCorrect[q.id] === false
+  )
+
 
   return (
     <div className="space-y-4">
@@ -248,10 +284,15 @@ function cleanHtmlTail(html: string) {
       <select
         className="border px-3 py-2 rounded w-full md:w-1/2"
         value={examId}
-        onChange={e => {
-          setExamId(e.target.value)
+        onChange={async e => {
+          const newExamId = e.target.value
+          setExamId(newExamId)
           setQuestionId('')
           setChoices([])
+
+          if (newExamId) {
+            preloadQuestionCorrectStatus(newExamId)
+          }
         }}
       >
         <option value="">Pilih Lembar Soal</option>
@@ -291,8 +332,15 @@ function cleanHtmlTail(html: string) {
           {questions
             .filter(q => !examId || q.exam_set_id === examId)
             .map(q => (
-              <option key={q.id} value={q.id} title={q.text}>
+              <option
+                key={q.id}
+                value={q.id}
+                title={q.text}
+              >
                 {q.text.length > 50 ? q.text.slice(0, 50) + '...' : q.text}
+
+                {/* ⚠️ indikator BELUM ADA KUNCI */}
+                {questionHasCorrect[q.id] === false && '  ⚠️'}
               </option>
             ))}
         </select>
@@ -506,6 +554,32 @@ function cleanHtmlTail(html: string) {
             </button>
           )}
         </div>
+
+        {/* ⚠️ DAFTAR SOAL BELUM ADA KUNCI JAWABAN */}
+        {examId && questionsWithoutCorrect.length > 0 && (
+          <div className="mt-4 border border-red-200 bg-red-50 rounded p-3">
+            <p className="text-sm font-semibold text-red-700 mb-2">
+              ⚠️ SOAL BELUM ADA KUNCI JAWABAN:
+            </p>
+
+            <ul className="space-y-1">
+              {questionsWithoutCorrect.map(q => (
+                <li
+                  key={q.id}
+                  onClick={() => {
+                    setQuestionId(q.id)
+                    loadChoices(q.id)
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }}
+                  className="cursor-pointer text-sm text-red-700 hover:underline hover:text-red-900"
+                  title={q.text}
+                >
+                  • {q.text.length > 80 ? q.text.slice(0, 80) + '…' : q.text}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
       {error && <p className="text-red-500">{error}</p>}
 
