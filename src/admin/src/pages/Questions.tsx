@@ -117,7 +117,7 @@ export default function Questions() {
       setError(setsError?.message || questionsError?.message || 'Gagal memuat data')
     } else {
       setSets(setsData || [])
-      setItems((questionsData || []).sort((a, b) => b.id.localeCompare(a.id)))
+      setItems(questionsData || [])
     }
   }
 

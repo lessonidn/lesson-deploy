@@ -37,6 +37,8 @@ type Question = {
   id: string
   text: string
   exam_set_id: string
+  exam_title: string
+  created_at: string
 }
 
 type Choice = {
@@ -107,9 +109,13 @@ export default function Choices() {
       setExamSets(examData || [])
 
       const { data: questionData, error } = await getQuestions()
-      if (error) setError(error.message)
-      else setQuestions(questionData || [])
+      if (error) {
+        setError(error.message)
+      } else {
+        setQuestions(questionData || [])
+      }
     }
+
     loadData()
   }, [])
 

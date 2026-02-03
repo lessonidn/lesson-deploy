@@ -316,8 +316,8 @@ export async function getAdminExamSets() {
 export async function getQuestions(examSetId?: string) {
   let query = supabase
     .from('questions_with_exam')
-    .select('id, text, exam_set_id, exam_title')
-    .order('id')
+    .select('id, text, exam_set_id, exam_title, created_at')
+    .order('created_at', { ascending: false })
 
   if (examSetId) query = query.eq('exam_set_id', examSetId)
   return query
