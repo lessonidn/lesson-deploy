@@ -884,17 +884,21 @@ export default function CategoryLandingPage() {
                       key={e.id}
                       onMouseEnter={() => setActiveLatestId(e.id)}
                       onMouseLeave={() => setActiveLatestId(null)}
+                      onPointerDown={() => {
+                        setActiveLatestId(e.id)
+                        setTimeout(() => setActiveLatestId(null), 2000)
+                      }}
                       className={`
                         relative
-                        group
                         flex items-center gap-3 p-3 rounded-xl cursor-pointer
                         border border-gray-100
                         transition-all duration-300 ease-out
                         transform
+                        active:scale-[0.97] active:opacity-90
                         ${
                           isActive
                             ? `bg-gradient-to-r ${gradient} text-white shadow-lg translate-x-2 scale-[1.02]`
-                            : 'bg-white text-slate-700 hover:bg-slate-50 hover:translate-x-2'
+                            : 'bg-white text-slate-700'
                         }
                       `}
                     >
@@ -903,28 +907,20 @@ export default function CategoryLandingPage() {
                         className={`
                           absolute left-0 top-0 h-full w-1 rounded-l-xl
                           transition-opacity duration-300
-                          ${
-                            isActive
-                              ? 'opacity-100 bg-white/70'
-                              : 'opacity-0 group-hover:opacity-60 bg-indigo-400'
-                          }
+                          ${isActive ? 'opacity-100 bg-white/70' : 'opacity-0'}
                         `}
                       />
 
                       {/* ANGKA BULAT */}
                       <div
                         className={`
-                          relative z-10
-                          w-8 h-8 shrink-0
-                          rounded-full
+                          w-8 h-8 shrink-0 rounded-full
                           flex items-center justify-center
                           text-xs font-bold
                           transition-colors duration-300
-                          ${
-                            isActive
-                              ? 'bg-white text-indigo-600'
-                              : 'bg-slate-100 text-slate-500 group-hover:bg-indigo-100 group-hover:text-indigo-600'
-                          }
+                          ${isActive
+                            ? 'bg-white text-indigo-600'
+                            : 'bg-slate-100 text-slate-500'}
                         `}
                       >
                         {index + 1}
@@ -934,14 +930,9 @@ export default function CategoryLandingPage() {
                       <Link
                         to={`/exam/${e.id}`}
                         className={`
-                          relative z-10
                           leading-snug font-semibold
                           transition-colors duration-300
-                          ${
-                            isActive
-                              ? 'text-white'
-                              : 'text-slate-700 group-hover:text-indigo-700'
-                          }
+                          ${isActive ? 'text-white' : 'text-slate-700'}
                         `}
                       >
                         {e.title}
