@@ -495,10 +495,20 @@ export default function Questions() {
                 onChange={e => setCopyTargetSetId(e.target.value)}
               >
                 <option value="">-- Pilih Lembar Tujuan --</option>
+
                 {sets.map(s => (
-                  <option key={s.id} value={s.id}>{s.title}</option>
+                  <option key={s.id} value={s.id}>
+                    {s.title}
+                    {s.sub_categories?.categories?.name
+                      ? ` | ${s.sub_categories.categories.name.toUpperCase()}`
+                      : ''}
+                    {s.sub_categories?.name
+                      ? ` › ${s.sub_categories.name.toUpperCase()}`
+                      : ''}
+                  </option>
                 ))}
               </select>
+
 
               <div className="flex gap-2">
                 <button

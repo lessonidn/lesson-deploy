@@ -261,9 +261,10 @@ export default function Categories() {
         {/* MEDIA PICKER */}
         <CategoryMediaPicker
           open={showMediaPicker}
+          folder="categories"
+          title="Pilih Gambar Kategori"
           onClose={() => setShowMediaPicker(false)}
           onSelect={(path) => {
-            // path = categories/xxx.webp
             setBannerImage(path)
           }}
         />

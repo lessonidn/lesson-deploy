@@ -29,7 +29,7 @@ export default function RequestSoalWA() {
 
           <div className="flex justify-between items-center">
             <h4 className="font-semibold flex items-center gap-2">
-              <img src="/leaf.png" className="w-5 h-5" />
+              <img src="/leaf_wa.png" className="w-5 h-5" />
               Request Soal</h4>
             <button onClick={() => setOpen(false)} className="text-gray-400">✕</button>
           </div>

@@ -17,8 +17,6 @@ import {
 
 /* ================= TYPES ================= */
 
-type MenuSource = 'manual' | 'category' | 'sub_category'
-
 type Category = {
   id: string
   name: string
@@ -58,11 +56,12 @@ type Menu = {
   id: string
   label: string
   url: string | null
-  position: 'header' | 'footer'
+  image_url?: string | null   // 🔥 TAMBAH
+  position: 'header' | 'footer' | 'hero'
   parent_id: string | null
-  order: number
+  order_index: number
   is_active: boolean
-  source: MenuSource
+  source: string
   source_id: string | null
   auto_generate: boolean
   children?: Menu[]
@@ -104,25 +103,6 @@ function buildMenuTree(menus: Menu[]) {
   return roots
 }
 
-  //-- SLIDER BANNER ---
-  const heroSlides = [
-    {
-      image:
-        'https://images.unsplash.com/photo-1565598611425-45b0878bdd0b?q=80&w=1170&auto=format&fit=crop',
-      link: '/category',
-    },
-    {
-      image:
-        'https://images.unsplash.com/photo-1756102080345-797e02549f97?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-      link: '/donasi',
-    },
-    {
-      image:
-        'https://images.unsplash.com/photo-1625111381887-458fce74a923?q=80&w=1171&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-      link: '/tentang-kami',
-    },
-  ]
-
 /* ================= COMPONENT ================= */
 
 export default function Home() {
@@ -140,9 +120,13 @@ export default function Home() {
   const [scrolled, setScrolled] = useState(false)
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const { session, profile, logout } = useAuth()
-  const [examTeasers, setExamTeasers] = useState<ExamTeaser[]>([])
 
+  const [heroMenus, setHeroMenus] = useState<Menu[]>([])
+
+  // 🔑 SATU-SATUNYA PENENTU MEMBER
   const isMemberActive = profile?.membership_status === 'active'
+
+  const [examTeasers, setExamTeasers] = useState<ExamTeaser[]>([])
 
   const [searchResults, setSearchResults] = useState<ExamSet[]>([])
   const [pageResults, setPageResults] = useState<Page[]>([])
@@ -196,19 +180,35 @@ export default function Home() {
 
   const HEADER_OFFSET = 140
 
+  const heroSlides = heroMenus
+    .filter(m => !!m.image_url)
+    .map(m => ({
+      image: m.image_url!,   // 🖼️ banner
+      link: m.url || '#',    // 🔗 tujuan klik
+      title: m.label,
+    }))
+
   /* ===== HERO SLIDER STATE (WAJIB DI SINI) ===== */
   const [currentSlide, setCurrentSlide] = useState(0)
+  
 
   // Auto slide hero
   useEffect(() => {
+    if (heroSlides.length === 0) return
+
+    if (currentSlide >= heroSlides.length) {
+      setCurrentSlide(0)
+      return
+    }
+
     const timer = setInterval(() => {
       setCurrentSlide(prev =>
-        prev === heroSlides.length - 1 ? 0 : prev + 1
+        prev >= heroSlides.length - 1 ? 0 : prev + 1
       )
     }, 4000)
 
     return () => clearInterval(timer)
-  }, [])
+  }, [heroSlides.length, currentSlide])
 
   // Header scroll effect
   useEffect(() => {
@@ -235,7 +235,7 @@ export default function Home() {
       { data: menus },
       { data: pages },
       { data: socialLinks },
-      { data: teasers },   // ✅ TAMBAH
+      { data: teasers },
     ] = await Promise.all([
       supabase
         .from('categories')
@@ -252,7 +252,7 @@ export default function Home() {
         .from('exam_sets')
         .select('id, title, sub_category_id, created_at, is_member_only')
         .eq('is_published', true)
-        .eq('is_deleted', false),   // ❌ hapus filter is_member_only di sini
+        .eq('is_deleted', false),
 
       supabase
         .from('exam_sets')
@@ -262,9 +262,10 @@ export default function Home() {
         .order('created_at', { ascending: false })
         .limit(10),
 
+      // 🔥 MENU: HEADER + FOOTER + HERO
       supabase
         .from('menus')
-        .select('*')
+        .select('id, label, url, image_url, position, parent_id, order_index, is_active, source, source_id, auto_generate')
         .eq('is_active', true)
         .order('order_index'),
 
@@ -282,9 +283,9 @@ export default function Home() {
         .order('order_index'),
 
       supabase
-      .from('exam_teasers')   // ✅ nama tabel plural sesuai schema
-      .select('id, title, sub_category_id, is_member_only')   // ✅ pakai kolom yang ada
-      .order('id', { ascending: false }),   // ✅ order by id saja
+        .from('exam_teasers')
+        .select('id, title, sub_category_id, is_member_only')
+        .order('id', { ascending: false }),
     ])
 
     if (!cats || !subs || !exams || !menus) {
@@ -299,7 +300,7 @@ export default function Home() {
     setLatestExams(latest || [])
     setLatestPages(pages || [])
     setSocialLinks(socialLinks || [])
-    setExamTeasers(teasers || [])   // ✅ TAMBAH
+    setExamTeasers(teasers || [])
 
     /* ===== RESOLVE AUTO MENU ===== */
 
@@ -320,7 +321,7 @@ export default function Home() {
             url: `/latihan/${c.slug}`,   // ✅ pakai slug dari DB
             position: menu.position,
             parent_id: menu.id,
-            order: i + 1,
+            order_index: i + 1,
             is_active: true,
             source: 'manual',
             source_id: c.id,
@@ -338,7 +339,7 @@ export default function Home() {
             url: `/latihan/${s.slug}`,   // ✅ pakai slug dari DB
             position: menu.position,
             parent_id: menu.id,
-            order: i + 1,
+            order_index: i + 1,
             is_active: true,
             source: 'manual',
             source_id: s.id,
@@ -351,8 +352,12 @@ export default function Home() {
     setHeaderMenus(buildMenuTree(resolved.filter(m => m.position === 'header')))
     setFooterMenus(resolved.filter(m => m.position === 'footer'))
 
+    // 🔥 HERO BANNER (BARU)
+    setHeroMenus(
+      menus.filter(m => m.position === 'hero')
+    )
 
-    setLoading(false)
+  setLoading(false)
   }
 
   if (loading) {
@@ -524,7 +529,8 @@ export default function Home() {
 
               {/* CTA / ACCOUNT */}
               <div className="hidden md:flex items-center gap-3 relative">
-                {!session && !profile && (
+                {/* ❌ BELUM LOGIN SAMA SEKALI */}
+                {!session && (
                   <Link
                     to="/login"
                     className="bg-sky-500 hover:bg-sky-400 text-white px-4 py-2 rounded-lg text-sm font-semibold transition"
@@ -533,7 +539,8 @@ export default function Home() {
                   </Link>
                 )}
 
-                {session && profile && (
+                {/* ✅ SUDAH LOGIN (Google / Member) */}
+                {session && (
                   <div className="relative group">
                     <button
                       className="
@@ -546,10 +553,9 @@ export default function Home() {
                         transition
                       "
                     >
-                      👤 {profile.full_name ?? 'Member'}
+                      👤 {profile?.full_name ?? 'Akun'}
                     </button>
 
-                    {/* Tambah invisible hover area */}
                     <div className="absolute top-full left-0 w-full h-2 bg-transparent"></div>
 
                     <div
@@ -558,15 +564,31 @@ export default function Home() {
                         bg-black/80 backdrop-blur-md
                         border border-white/10
                         rounded-lg shadow-xl
-                        hidden group-hover:block group-focus-within:block
+                        hidden group-hover:block
                         overflow-hidden
                         z-50
                       "
                     >
-                      <Link to="/mydashboard" className="block px-4 py-2 text-sm hover:bg-white/10">
-                        Dashboard
-                      </Link>
-                      
+                      {/* HANYA MEMBER AKTIF */}
+                      {profile?.membership_status === 'active' && (
+                        <Link
+                          to="/mydashboard"
+                          className="block px-4 py-2 text-sm hover:bg-white/10"
+                        >
+                          Dashboard
+                        </Link>
+                      )}
+
+                      {/* AUTH-ONLY (GOOGLE) */}
+                      {(!profile || profile.membership_status !== 'active') && (
+                        <Link
+                          to="/upgrade"
+                          className="block px-4 py-2 text-sm hover:bg-white/10 text-indigo-300"
+                        >
+                          Upgrade Member
+                        </Link>
+                      )}
+
                       <button
                         onClick={logout}
                         className="w-full text-left px-4 py-2 text-sm hover:bg-white/10 text-red-400"
@@ -684,35 +706,48 @@ export default function Home() {
             </div>
 
             {/* SLIDER */}
-            <div className="relative">
-              <a href={heroSlides[currentSlide].link}>
-                <img
-                  src={heroSlides[currentSlide].image}
-                  alt="Hero Slide"
-                  className="
-                    rounded-2xl shadow-xl
-                    transition-opacity duration-700 ease-in-out
-                    opacity-100
-                  "
-                />
-              </a>
+            {heroSlides.length > 0 && heroSlides[currentSlide] && (
+              <div className="relative">
+                <a href={heroSlides[currentSlide].link}>
+                  {/* WRAPPER FIX SIZE - 420px */}
+                  <div className="
+                    w-full
+                    aspect-[16/9]
+                    max-h-[420px]
+                    overflow-hidden
+                    rounded-2xl
+                    shadow-xl
+                    bg-gray-200
+                  ">
+                    <img
+                      src={heroSlides[currentSlide].image}
+                      alt={heroSlides[currentSlide].title || 'Hero Banner'}
+                      className="
+                        w-full h-full
+                        object-cover
+                        transition-opacity duration-700 ease-in-out
+                      "
+                    />
+                  </div>
+                </a>
 
-              {/* INDICATORS */}
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                {heroSlides.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setCurrentSlide(i)}
-                    className={`
-                      w-2.5 h-2.5 rounded-full transition
-                      ${i === currentSlide
-                        ? 'bg-white'
-                        : 'bg-white/40 hover:bg-white/70'}
-                    `}
-                  />
-                ))}
+                {/* INDICATORS */}
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                  {heroSlides.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setCurrentSlide(i)}
+                      className={`
+                        w-2.5 h-2.5 rounded-full transition
+                        ${i === currentSlide
+                          ? 'bg-white'
+                          : 'bg-white/40 hover:bg-white/70'}
+                      `}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </section>
 
@@ -856,7 +891,14 @@ export default function Home() {
                           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             {exams.map(exam => {
                               const isMemberOnly = exam.is_member_only
-                              const isLocked = isMemberOnly && !isMemberActive
+                                const canAccessExam = !isMemberOnly || isMemberActive
+                                //console.table(
+                                  //exams.map(e => ({
+                                    //title: e.title,
+                                    //is_member_only: e.is_member_only,
+                                  //}))
+                                //)
+                                
 
                               // Publik exam (selalu bisa diakses)
                               if (!isMemberOnly) {
@@ -880,7 +922,7 @@ export default function Home() {
                               }
 
                               // Exam member-only tapi user belum aktif → teaser yang bisa diklik ke /upgrade
-                              if (isLocked) {
+                              if (!canAccessExam) {
                                 return (
                                   <Link
                                     key={exam.id}
