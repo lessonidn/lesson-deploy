@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import logo from '../asset/leaf.png'
 import { Helmet } from 'react-helmet-async'
 import { normalizeArray } from '../utils/normalize'
+import { useAuth } from '../hooks/useAuth'
 
 type Category = {
   id: string
@@ -24,6 +25,7 @@ type ExamSet = {
   slug: string
   description: string | null
   duration_minutes: number
+  is_member_only: boolean
   sub_categories: SubCategory[]
 }
 
@@ -35,6 +37,9 @@ export default function ExamPage() {
   const [questionCount, setQuestionCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const { profile } = useAuth()
+  const isMemberActive = profile?.membership_status === 'active'
 
   const loadExam = useCallback(async () => {
     if (!categorySlug || !subCategorySlug || !examSlug) return
@@ -50,6 +55,7 @@ export default function ExamPage() {
         slug,
         description,
         duration_minutes,
+        is_member_only,
         sub_categories!inner (
           id,
           name,
@@ -73,6 +79,12 @@ export default function ExamPage() {
       return
     }
 
+    // 🔐 PROTEKSI MEMBER
+    if (examData.is_member_only && !isMemberActive) {
+      navigate('/upgrade')
+      return
+    }
+
     const { count } = await supabase
       .from('questions')
       .select('*', { count: 'exact', head: true })
@@ -81,7 +93,8 @@ export default function ExamPage() {
     setExam(examData)
     setQuestionCount(count || 0)
     setLoading(false)
-  }, [categorySlug, subCategorySlug, examSlug])
+
+  }, [categorySlug, subCategorySlug, examSlug, isMemberActive, navigate])
 
   useEffect(() => {
     loadExam()
