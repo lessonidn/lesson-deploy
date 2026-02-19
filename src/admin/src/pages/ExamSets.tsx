@@ -52,6 +52,9 @@ export default function ExamSets() {
   const [error, setError] = useState<string | null>(null)
   const [filterSubId, setFilterSubId] = useState<string>('')
   const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>('all')
+  const [memberFilter, setMemberFilter] = useState<'all' | 'member' | 'public'>('all')
+
   const { canClick } = usePreventDoubleClick()
 
   async function load() {
@@ -243,6 +246,30 @@ export default function ExamSets() {
           ))}
         </select>
 
+        {/* FILTER STATUS PUBLISH */}
+        <select
+          className="border px-3 py-2 rounded"
+          value={statusFilter}
+          onChange={(e) =>
+          setStatusFilter(e.target.value as 'all' | 'published' | 'draft')}
+        >
+          <option value="all">Filter: Semua Status</option>
+          <option value="published">Published</option>
+          <option value="draft">Unpublish</option>
+        </select>
+
+        {/* FILTER MEMBER */}
+        <select
+          className="border px-3 py-2 rounded"
+          value={memberFilter}
+          onChange={(e) =>
+          setMemberFilter(e.target.value as 'all' | 'member' | 'public')}
+        >
+          <option value="all">Filter: Semua Akses</option>
+          <option value="member">Khusus Member</option>
+          <option value="public">Publik</option>
+        </select>
+
         {/* SEARCH */}
         <div className="relative w-full md:w-72">
           <input
@@ -269,10 +296,28 @@ export default function ExamSets() {
       {/* LIST */}
       <ul className="bg-white border rounded divide-y">
         {items
+          // Filter Sub Kategori
           .filter(i => !filterSubId || i.sub_category_id === filterSubId)
+
+          // Filter Publish Status
+          .filter(i => {
+            if (statusFilter === 'published') return i.is_published
+            if (statusFilter === 'draft') return !i.is_published
+            return true
+          })
+
+          // Filter Member Status
+          .filter(i => {
+            if (memberFilter === 'member') return i.is_member_only
+            if (memberFilter === 'public') return !i.is_member_only
+            return true
+          })
+
+          // Search
           .filter(i =>
             i.title.toLowerCase().includes(search.toLowerCase())
           )
+
           .map(i => (
             <li key={i.id} className="p-4 flex justify-between items-center hover:bg-yellow-300 transition-colors">
               <div>
