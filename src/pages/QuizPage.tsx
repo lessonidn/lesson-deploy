@@ -196,6 +196,8 @@ export default function QuizPage() {
       }
       sessionStorage.removeItem('attempt_id')
 
+      localStorage.removeItem(`quiz-progress-${examId}`)
+
       navigate(`/result/${attempt.id}`)
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -225,6 +227,38 @@ export default function QuizPage() {
     }, 1000)
     return () => clearInterval(timer)
   }, [timeLeft, submitQuiz])
+
+  // 🔐 CEGAH RELOAD / CLOSE TAB
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!submitting && !isTimeUp) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [submitting, isTimeUp])
+
+  // 🔐 CEGAH BACK BROWSER
+  useEffect(() => {
+    window.history.pushState(null, '', window.location.href)
+
+    const handlePopState = () => {
+      window.history.pushState(null, '', window.location.href)
+    }
+
+    window.addEventListener('popstate', handlePopState)
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+    }
+  }, [])
+
 
   async function loadQuiz(examSetId: string) {
     setLoading(true)
@@ -265,7 +299,18 @@ export default function QuizPage() {
       ...q,
       choices: shuffle(q.choices || []),
     }))
+
     setQuestions(shuffledQuestions)
+
+    // 🔄 RESTORE PROGRESS JIKA ADA
+    const saved = localStorage.getItem(`quiz-progress-${examSetId}`)
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      setAnswers(parsed.answers || {})
+      setCurrentIndex(parsed.currentIndex || 0)
+      setTimeLeft(parsed.timeLeft || exam.duration_minutes * 60)
+    }
+
     setLoading(false)
   }
 
@@ -277,6 +322,21 @@ export default function QuizPage() {
       [questionId]: choiceId 
     }))
   }
+
+  // 💾 AUTO SAVE PROGRESS
+  useEffect(() => {
+    if (!examId) return
+
+    localStorage.setItem(
+      `quiz-progress-${examId}`,
+      JSON.stringify({
+        answers,
+        currentIndex,
+        timeLeft,
+      })
+    )
+  }, [answers, currentIndex, timeLeft, examId])
+
 
   function formatTime(seconds: number) {
     const m = Math.floor(seconds / 60)
@@ -293,6 +353,7 @@ export default function QuizPage() {
 
   const question = questions[currentIndex]
   const selected = answers[question.id]
+  
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-pink-50">
