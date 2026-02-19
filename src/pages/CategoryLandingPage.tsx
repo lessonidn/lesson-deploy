@@ -672,20 +672,72 @@ export default function CategoryLandingPage() {
                 {/* === HASIL LATIHAN === */}
                 {hasExamResults && (
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {searchResults.map(exam => (
-                      <Link
-                        key={exam.id}
-                        to={`/exam/${exam.id}`}
-                        className="p-5 rounded-2xl border bg-white hover:shadow-lg"
-                      >
-                        <div className="font-semibold text-gray-800">
-                          {exam.title}
-                        </div>
-                        <div className="text-xs text-blue-600 mt-2">
-                          Kerjakan Sekarang →
-                        </div>
-                      </Link>
-                    ))}
+                    {searchResults.map(exam => {
+                      const isMemberOnly = exam.is_member_only
+                      const isLocked = isMemberOnly && !isMemberActive
+
+                      // === PUBLIK ===
+                      if (!isMemberOnly) {
+                        return (
+                          <Link
+                            key={exam.id}
+                            to={`/exam/${exam.id}`}
+                            className="p-5 rounded-2xl border bg-white hover:shadow-lg"
+                          >
+                            <div className="font-semibold text-gray-800">
+                              {exam.title}
+                            </div>
+                            <div className="text-xs text-blue-600 mt-2">
+                              Kerjakan Sekarang →
+                            </div>
+                          </Link>
+                        )
+                      }
+
+                      // === MEMBER ONLY TAPI LOCKED ===
+                      if (isLocked) {
+                        return (
+                          <Link
+                            key={exam.id}
+                            to="/upgrade"
+                            className="relative p-5 rounded-2xl border bg-gradient-to-br from-purple-50 to-white border-purple-300 hover:shadow-lg"
+                          >
+                            <div className="absolute top-3 right-3 bg-purple-600 text-white text-[10px] font-semibold px-2 py-1 rounded-full">
+                              KHUSUS MEMBER
+                            </div>
+
+                            <div className="font-semibold text-gray-800">
+                              {exam.title}
+                            </div>
+
+                            <div className="mt-3 text-sm text-purple-700 font-medium">
+                              🔒 Login / Upgrade untuk akses penuh →
+                            </div>
+                          </Link>
+                        )
+                      }
+
+                      // === MEMBER AKTIF ===
+                      return (
+                        <Link
+                          key={exam.id}
+                          to={`/exam/${exam.id}`}
+                          className="relative p-5 rounded-2xl border bg-gradient-to-br from-purple-50 to-white border-purple-300 hover:shadow-lg"
+                        >
+                          <div className="absolute top-3 right-3 bg-purple-600 text-white text-[10px] font-semibold px-2 py-1 rounded-full">
+                            KHUSUS MEMBER
+                          </div>
+
+                          <div className="font-semibold text-gray-800">
+                            {exam.title}
+                          </div>
+
+                          <div className="mt-3 text-sm text-green-700 font-medium">
+                            ✅ Akses terbuka untuk Member
+                          </div>
+                        </Link>
+                      )
+                    })}
                   </div>
                 )}
 
@@ -927,16 +979,35 @@ export default function CategoryLandingPage() {
                       </div>
 
                       {/* JUDUL */}
-                      <Link
-                        to={`/exam/${e.id}`}
-                        className={`
-                          leading-snug font-semibold
-                          transition-colors duration-300
-                          ${isActive ? 'text-white' : 'text-slate-700'}
-                        `}
-                      >
-                        {e.title}
-                      </Link>
+                      <div className="flex flex-col">
+                        <Link
+                          to={
+                            e.is_member_only && !isMemberActive
+                              ? '/upgrade'
+                              : `/exam/${e.id}`
+                          }
+                          className={`
+                            leading-snug font-semibold
+                            transition-colors duration-300
+                            ${isActive ? 'text-white' : 'text-slate-700'}
+                          `}
+                        >
+                          {e.title}
+                        </Link>
+
+                        {e.is_member_only && (
+                          <span
+                            className={`
+                              mt-1 inline-block text-[10px] px-2 py-0.5 rounded-full font-medium
+                              ${isActive
+                                ? 'bg-white/20 text-white'
+                                : 'bg-purple-100 text-purple-700'}
+                            `}
+                          >
+                            🔒 Khusus Member
+                          </span>
+                        )}
+                      </div>
                     </li>
                   )
                 })}

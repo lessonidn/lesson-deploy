@@ -1135,16 +1135,31 @@ export default function Home() {
                       </div>
 
                       {/* JUDUL */}
-                      <Link
-                        to={`/exam/${e.id}`}
-                        className={`
-                          leading-snug font-semibold
-                          transition-colors duration-300
-                          ${isActive ? 'text-white' : 'text-slate-700'}
-                        `}
-                      >
-                        {e.title}
-                      </Link>
+                      <div className="flex flex-col">
+                        <Link
+                          to={`/exam/${e.id}`}
+                          className={`
+                            leading-snug font-semibold
+                            transition-colors duration-300
+                            ${isActive ? 'text-white' : 'text-slate-700'}
+                          `}
+                        >
+                          {e.title}
+                        </Link>
+
+                        {e.is_member_only && (
+                          <span
+                            className={`
+                              mt-1 inline-block text-[10px] px-2 py-0.5 rounded-full font-medium
+                              ${isActive
+                                ? 'bg-white/20 text-white'
+                                : 'bg-purple-100 text-purple-700'}
+                            `}
+                          >
+                            🔒 Khusus Member
+                          </span>
+                        )}
+                      </div>
                     </li>
                   )
                 })}
