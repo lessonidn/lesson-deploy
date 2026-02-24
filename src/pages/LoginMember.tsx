@@ -10,7 +10,7 @@ export default function LoginMember() {
   const [error, setError] = useState<string | null>(null)
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault() // ✅ cegah reload default
+    e.preventDefault()
     setError(null)
     setLoading(true)
 
@@ -19,19 +19,36 @@ export default function LoginMember() {
       password,
     })
 
-    setLoading(false)
-
     if (error) {
       setError(error.message)
+      setLoading(false)
       return
     }
 
-    const role = data.user?.app_metadata?.role
+    const userId = data.user?.id
+    if (!userId) {
+      setError('Login gagal')
+      setLoading(false)
+      return
+    }
 
-    if (role === 'member') {
+    // 🔑 CEK PROFILE (SUMBER KEBENARAN)
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('membership_status')
+      .eq('id', userId)
+      .single()
+
+    setLoading(false)
+
+    if (profileError || !profile) {
+      // Login berhasil tapi bukan member
+      navigate('/upgrade')
+      return
+    }
+
+    if (profile.membership_status === 'active') {
       navigate('/mydashboard')
-    } else if (role === 'admin') {
-      navigate('/admin')
     } else {
       navigate('/upgrade')
     }

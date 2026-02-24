@@ -45,12 +45,27 @@ export default function ResultPage() {
   const [comment, setComment] = useState('')
   const [user, setUser] = useState<User | null>(null)
 
+  const [submitting, setSubmitting] = useState(false)
+
  /* === CEK LOGIN GMAIL KOMENTAR ==== */
   useEffect(() => {
+    // ambil user awal (jika sudah login)
     supabase.auth.getUser().then(({ data }) => {
       setUser(data.user)
     })
+
+    // listen perubahan auth (login / logout / refresh)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [])
+
 
   const loadResult = useCallback(async () => {
     const { data: attemptData } = await supabase
@@ -364,7 +379,11 @@ export default function ResultPage() {
                 onClick={async () => {
                   await supabase.auth.signInWithOAuth({
                     provider: 'google',
+                    options: {
+                      redirectTo: `${window.location.origin}${window.location.pathname}`,
+                    },
                   })
+
                 }}
                 className="mt-3 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
               >
@@ -410,7 +429,9 @@ export default function ResultPage() {
 
               {/* SUBMIT (BELUM SIMPAN DB) */}
               <button
-                onClick={() => {
+                onClick={async () => {
+                  setSubmitting(true)
+
                   console.log({
                     attemptId,
                     rating,
@@ -418,12 +439,14 @@ export default function ResultPage() {
                     user_id: user.id,
                     email: user.email,
                   })
+
                   alert('Terima kasih atas masukannya 🙏')
+                  setSubmitting(false)
                 }}
-                disabled={rating === 0}
+                disabled={rating === 0 || submitting}
                 className="mt-4 rounded-lg bg-indigo-600 px-6 py-3 text-white hover:bg-indigo-700 disabled:opacity-50"
               >
-                Kirim Penilaian
+                {submitting ? 'Mengirim...' : 'Kirim Penilaian'}
               </button>
             </>
           )}

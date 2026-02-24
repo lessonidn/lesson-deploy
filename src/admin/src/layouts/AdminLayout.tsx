@@ -1,6 +1,6 @@
 import { Outlet, useNavigate } from "react-router-dom";
 import Sidebar from "../components/sidebar/Sidebar";
-import logo from "../asset/logo.png";
+import logo from "../asset/3D.webp";
 import { useEffect, useState } from "react";
 import { supabase } from "../../../lib/supabase";
 import { logout } from "../../../lib/logout";
@@ -69,7 +69,7 @@ export default function AdminLayout() {
         <header className="h-14 bg-white border-b flex items-center justify-between px-4 sm:px-6">
          <a href="/" target="_blank" rel="noopener noreferrer" className="inline-block">
             <div className="flex items-center gap-2">
-              <img src={logo} alt="Logo" className="h-8 w-auto" />
+              <img src={logo} alt="Logo" className="h-14 w-auto" />
               <span className="font-semibold text-sm sm:text-base">
                 Lesson.Idn
               </span>

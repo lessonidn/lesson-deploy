@@ -15,7 +15,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .eq('id', userId)
       .maybeSingle()
 
-    if (!error) setProfile(data ?? null)
+    // ⭐ FIX: profile NULL itu VALID (auth-only user)
+    if (!error) {
+      setProfile(data ?? null)
+    }
   }
 
   useEffect(() => {
@@ -24,12 +27,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const init = async () => {
       const { data } = await supabase.auth.getSession()
       if (!active) return
-      setSession(data.session)
-      setLoading(false)
 
+      setSession(data.session)
+
+      // ⭐ FIX: session sudah cukup untuk dianggap login
       if (data.session?.user) {
         fetchProfile(data.session.user.id)
+      } else {
+        setProfile(null)
       }
+
+      setLoading(false)
     }
 
     init()
@@ -38,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, newSession) => {
       if (!active) return
+
       setSession(newSession)
 
       if (newSession?.user) {
@@ -60,7 +69,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ session, profile, loading, logout }}>
+    <AuthContext.Provider
+      value={{
+        session,
+        profile, // boleh null → auth-only user
+        loading,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )

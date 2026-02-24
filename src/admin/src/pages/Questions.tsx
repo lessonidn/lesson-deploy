@@ -403,7 +403,7 @@ export default function Questions() {
             placeholder="Cari soal..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="border px-3 py-1 rounded w-full text-sm pr-8"
+            className="border px-3 py-2 rounded w-full text-sm pr-8"
           />
           {search && (
             <button

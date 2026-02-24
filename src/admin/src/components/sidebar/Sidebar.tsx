@@ -24,7 +24,7 @@ type SidebarProps = {
 export default function Sidebar({ open, onClose }: SidebarProps) {
   return (
     <aside
-      className={`fixed inset-y-0 left-0 w-64 bg-slate-900 text-white flex flex-col
+      className={`fixed inset-y-0 left-0 w-44 bg-slate-900 text-white flex flex-col
         transform transition-transform duration-300 z-50
         ${open ? 'translate-x-0' : '-translate-x-full'}
         md:translate-x-0 md:static md:shadow-none`}

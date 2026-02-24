@@ -10,10 +10,10 @@ export default function MenuManagerLayout() {
   return (
     <div className="flex gap-6">
       {/* SUB MENU */}
-      <aside className="w-64 bg-white border rounded-xl p-4">
+      <aside className="w-44 bg-gray-100 border rounded-xl p-4">
         <h2 className="font-bold mb-4">Menu Manager</h2>
 
-        <nav className="space-y-1 text-sm">
+        <nav className="space-y-1 font-semibold text-sm">
           <NavLink
             to="/admin/menu-manager/menus"
             className={({ isActive }) =>
@@ -33,15 +33,6 @@ export default function MenuManagerLayout() {
           </NavLink>
 
           <NavLink
-            to="/admin/menu-manager/widgets"
-            className={({ isActive }) =>
-              `${linkClass} ${isActive ? activeClass : ''}`
-            }
-          >
-            Widgets
-          </NavLink>
-
-          <NavLink
             to="/admin/menu-manager/banners"
             className={({ isActive }) =>
               `${linkClass} ${isActive ? activeClass : ''}`
@@ -58,6 +49,15 @@ export default function MenuManagerLayout() {
             }
           >
             Social Media
+          </NavLink>
+
+          <NavLink
+            to="/admin/menu-manager/widgets"
+            className={({ isActive }) =>
+              `${linkClass} ${isActive ? activeClass : ''}`
+            }
+          >
+            Komentar dan Rating
           </NavLink>
         </nav>
       </aside>

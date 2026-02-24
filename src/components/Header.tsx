@@ -17,6 +17,7 @@ export default function Header() {
       </Link>
 
       <div className="flex items-center gap-4">
+        {/* ================= BELUM LOGIN ================= */}
         {!session && (
           <>
             <Link
@@ -34,20 +35,26 @@ export default function Header() {
           </>
         )}
 
-        {session && profile && (
+        {/* ================= SUDAH LOGIN (APAPUN ROLE NYA) ================= */}
+        {session && (
           <div className="relative group">
             <button className="flex items-center gap-2 text-sm font-medium">
-              👤 {profile.full_name ?? 'Member'}
+              👤 {profile?.full_name ?? 'Pengguna'}
             </button>
 
             <div className="absolute right-0 mt-2 w-48 bg-white border rounded shadow hidden group-hover:block">
-              <Link
-                to="/mydashboard"
-                className="block px-4 py-2 text-sm hover:bg-gray-100"
-              >
-                Dashboard
-              </Link>
+              
+              {/* Dashboard HANYA UNTUK MEMBER AKTIF */}
+              {isMemberActive && (
+                <Link
+                  to="/mydashboard"
+                  className="block px-4 py-2 text-sm hover:bg-gray-100"
+                >
+                  Dashboard
+                </Link>
+              )}
 
+              {/* Upgrade muncul jika bukan member aktif */}
               {!isMemberActive && (
                 <Link
                   to="/upgrade"
