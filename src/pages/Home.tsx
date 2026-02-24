@@ -943,16 +943,12 @@ export default function Home() {
                           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             {exams.map(exam => {
                               const isMemberOnly = exam.is_member_only
-                                const canAccessExam = !isMemberOnly || isMemberActive
-                                //console.table(
-                                  //exams.map(e => ({
-                                    //title: e.title,
-                                    //is_member_only: e.is_member_only,
-                                  //}))
-                                //)
-                                
 
-                              // Publik exam (selalu bisa diakses)
+                              // 🔥 FIX FINAL DAN JELAS
+                              const canAccessExam =
+                                !isMemberOnly ||
+                                (profile && profile.membership_status === 'active')
+
                               if (!isMemberOnly) {
                                 return (
                                   <Link
@@ -1071,6 +1067,9 @@ export default function Home() {
               </h4>
               <ul className="space-y-3 text-sm select-none">
                 {latestExams.map((e, index) => {
+                  const isMemberOnly = e.is_member_only
+                  const isLocked = isMemberOnly && !isMemberActive
+
                   const gradients = [
                     'from-purple-500 to-fuchsia-500',
                     'from-blue-500 to-cyan-500',
@@ -1119,43 +1118,22 @@ export default function Home() {
                         `}
                       />
 
-                      {/* ANGKA BULAT */}
-                      <div
-                        className={`
-                          w-8 h-8 shrink-0 rounded-full
-                          flex items-center justify-center
-                          text-xs font-bold
-                          transition-colors duration-300
-                          ${isActive
-                            ? 'bg-white text-indigo-600'
-                            : 'bg-slate-100 text-slate-500'}
-                        `}
-                      >
+                      {/* Nomor urut */}
+                      <div className="w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-xs font-bold bg-slate-100 text-slate-500">
                         {index + 1}
                       </div>
 
-                      {/* JUDUL */}
+                      {/* Judul + Badge */}
                       <div className="flex flex-col">
                         <Link
-                          to={`/exam/${e.id}`}
-                          className={`
-                            leading-snug font-semibold
-                            transition-colors duration-300
-                            ${isActive ? 'text-white' : 'text-slate-700'}
-                          `}
+                          to={isLocked ? '/upgrade' : `/exam/${e.id}`}
+                          className="leading-snug font-semibold"
                         >
                           {e.title}
                         </Link>
 
-                        {e.is_member_only && (
-                          <span
-                            className={`
-                              mt-1 inline-block text-[10px] px-2 py-0.5 rounded-full font-medium
-                              ${isActive
-                                ? 'bg-white/20 text-white'
-                                : 'bg-purple-100 text-purple-700'}
-                            `}
-                          >
+                        {isMemberOnly && (
+                          <span className="mt-1 inline-block text-[10px] px-2 py-0.5 rounded-full font-medium bg-purple-600 text-white font-semibold">
                             🔒 Khusus Member
                           </span>
                         )}

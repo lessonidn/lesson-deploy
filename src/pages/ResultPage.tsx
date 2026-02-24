@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import 'katex/dist/katex.min.css'
 import katex from 'katex'
@@ -47,25 +47,32 @@ export default function ResultPage() {
 
   const [submitting, setSubmitting] = useState(false)
 
+  const commentSectionRef = useRef<HTMLDivElement | null>(null)
+
  /* === CEK LOGIN GMAIL KOMENTAR ==== */
   useEffect(() => {
-    // ambil user awal (jika sudah login)
+    let isMounted = true
+
+    const handleUser = (currentUser: User | null) => {
+      if (!isMounted) return
+      setUser(currentUser)
+    }
+
     supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user)
+      handleUser(data.user)
     })
 
-    // listen perubahan auth (login / logout / refresh)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
+      handleUser(session?.user ?? null)
     })
 
     return () => {
+      isMounted = false
       subscription.unsubscribe()
     }
   }, [])
-
 
   const loadResult = useCallback(async () => {
     const { data: attemptData } = await supabase
@@ -132,6 +139,26 @@ export default function ResultPage() {
   useEffect(() => {
     loadResult()
   }, [loadResult])
+
+  
+  useEffect(() => {
+    const shouldScroll = sessionStorage.getItem('scrollToComment')
+
+    if (
+      shouldScroll === 'true' &&
+      user &&
+      !loading &&
+      commentSectionRef.current
+    ) {
+      setTimeout(() => {
+        commentSectionRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        })
+        sessionStorage.removeItem('scrollToComment')
+      }, 200)
+    }
+  }, [user, loading])
 
   if (loading) {
     return <div className="p-10 text-center">Loading hasil...</div>
@@ -220,7 +247,7 @@ export default function ResultPage() {
   /* ================== UI ================== */
 
   return (
-    <div className="min-h-screen bg-gray-50 relative overflow-hidden">
+    <div className="min-h-screen bg-gray-50 relative">
 
       {/* CONFETTI */}
       {percentage >= 60 && (
@@ -357,7 +384,11 @@ export default function ResultPage() {
           </Link>
         </div>
         {/* ===== RATING & KOMENTAR LEMBAR SOAL ===== */}
-        <div className="mt-12 rounded-2xl border bg-white p-6 shadow-sm">
+        <div
+          id="comment"
+          ref={commentSectionRef}
+          className="mt-12 rounded-2xl border bg-white p-6 shadow-sm"
+        >
           <h3 className="text-lg font-semibold text-gray-800">
             ⭐ Penilaian & Masukan
           </h3>
@@ -377,13 +408,15 @@ export default function ResultPage() {
 
               <button
                 onClick={async () => {
+                  // tandai bahwa login dari komentar
+                  sessionStorage.setItem('scrollToComment', 'true')
+
                   await supabase.auth.signInWithOAuth({
                     provider: 'google',
                     options: {
                       redirectTo: `${window.location.origin}${window.location.pathname}`,
                     },
                   })
-
                 }}
                 className="mt-3 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
               >

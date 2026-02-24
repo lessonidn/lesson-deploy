@@ -170,6 +170,7 @@ export default function QuizPage() {
 
       let score = 0
       let correctCount = 0
+
       answersPayload.forEach(a => {
         if (a.is_correct) {
           correctCount++
@@ -178,10 +179,18 @@ export default function QuizPage() {
         }
       })
 
-      await supabase
+      // contoh: simpan ke database atau tampilkan
+      console.log('Jumlah benar:', correctCount)
+      console.log('Skor:', score)
+      const { error: updateError } = await supabase
         .from('quiz_attempts')
-        .update({ score, correct_answers: correctCount })
+        .update({
+          score,
+          finished_at: new Date().toISOString()
+        })
         .eq('id', attempt.id)
+
+      if (updateError) throw updateError
 
       const attemptId = sessionStorage.getItem('attempt_id')
 

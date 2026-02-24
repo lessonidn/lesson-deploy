@@ -73,11 +73,39 @@ export default function Dashboard() {
     if (endDate) query = query.lte('activity_date', endDate)
 
     const { data, error } = await query
-      .order('total_finished', { ascending: false })
-      .limit(10)
 
-    if (error) setError(error.message)
-    else setExamStats(data || [])
+    if (error) {
+      setError(error.message)
+      return
+    }
+
+    if (!data) {
+      setExamStats([])
+      return
+    }
+
+    // 🔥 GROUPING TOTAL PER EXAM
+    const grouped: Record<string, ExamStat> = {}
+
+    data.forEach(row => {
+      if (!grouped[row.exam_id]) {
+        grouped[row.exam_id] = {
+          exam_id: row.exam_id,
+          exam_label: row.exam_label,
+          activity_date: null, // tidak dipakai lagi
+          total_attempts: 0,
+          total_finished: 0
+        }
+      }
+
+      grouped[row.exam_id].total_attempts += row.total_attempts
+      grouped[row.exam_id].total_finished += row.total_finished
+    })
+
+    const aggregated = Object.values(grouped)
+      .sort((a, b) => b.total_finished - a.total_finished)
+
+    setExamStats(aggregated)
   }, [startDate, endDate])
 
   useEffect(() => {
@@ -232,7 +260,7 @@ export default function Dashboard() {
 
                 return (
                   <tr
-                    key={`${row.exam_id}-${row.activity_date}`}
+                    key={row.exam_id}
                     className={`border-t ${
                       isProblematic ? 'bg-red-50' : ''
                     }`}

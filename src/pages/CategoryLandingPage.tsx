@@ -526,7 +526,7 @@ export default function CategoryLandingPage() {
                   </>
                 )}
 
-                {session && profile && (
+                {session && (
                   <div className="relative group">
                     <button
                       className="
@@ -539,7 +539,7 @@ export default function CategoryLandingPage() {
                         transition
                       "
                     >
-                      👤 {profile.full_name ?? 'Member'}
+                      👤 {profile?.full_name ?? 'Akun'}
                     </button>
 
                     {/* Invisible hover bridge */}
@@ -556,14 +556,16 @@ export default function CategoryLandingPage() {
                         z-50
                       "
                     >
-                      <Link
-                        to="/mydashboard"
-                        className="block px-4 py-2 text-sm hover:bg-white/10"
-                      >
-                        Dashboard
-                      </Link>
+                      {profile?.membership_status === 'active' && (
+                        <Link
+                          to="/mydashboard"
+                          className="block px-4 py-2 text-sm hover:bg-white/10"
+                        >
+                          Dashboard
+                        </Link>
+                      )}
 
-                      {profile.membership_status !== 'active' && (
+                      {(!profile || profile.membership_status !== 'active') && (
                         <Link
                           to="/upgrade"
                           className="block px-4 py-2 text-sm hover:bg-white/10 text-sky-400"
@@ -672,72 +674,20 @@ export default function CategoryLandingPage() {
                 {/* === HASIL LATIHAN === */}
                 {hasExamResults && (
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {searchResults.map(exam => {
-                      const isMemberOnly = exam.is_member_only
-                      const isLocked = isMemberOnly && !isMemberActive
-
-                      // === PUBLIK ===
-                      if (!isMemberOnly) {
-                        return (
-                          <Link
-                            key={exam.id}
-                            to={`/exam/${exam.id}`}
-                            className="p-5 rounded-2xl border bg-white hover:shadow-lg"
-                          >
-                            <div className="font-semibold text-gray-800">
-                              {exam.title}
-                            </div>
-                            <div className="text-xs text-blue-600 mt-2">
-                              Kerjakan Sekarang →
-                            </div>
-                          </Link>
-                        )
-                      }
-
-                      // === MEMBER ONLY TAPI LOCKED ===
-                      if (isLocked) {
-                        return (
-                          <Link
-                            key={exam.id}
-                            to="/upgrade"
-                            className="relative p-5 rounded-2xl border bg-gradient-to-br from-purple-50 to-white border-purple-300 hover:shadow-lg"
-                          >
-                            <div className="absolute top-3 right-3 bg-purple-600 text-white text-[10px] font-semibold px-2 py-1 rounded-full">
-                              KHUSUS MEMBER
-                            </div>
-
-                            <div className="font-semibold text-gray-800">
-                              {exam.title}
-                            </div>
-
-                            <div className="mt-3 text-sm text-purple-700 font-medium">
-                              🔒 Login / Upgrade untuk akses penuh →
-                            </div>
-                          </Link>
-                        )
-                      }
-
-                      // === MEMBER AKTIF ===
-                      return (
-                        <Link
-                          key={exam.id}
-                          to={`/exam/${exam.id}`}
-                          className="relative p-5 rounded-2xl border bg-gradient-to-br from-purple-50 to-white border-purple-300 hover:shadow-lg"
-                        >
-                          <div className="absolute top-3 right-3 bg-purple-600 text-white text-[10px] font-semibold px-2 py-1 rounded-full">
-                            KHUSUS MEMBER
-                          </div>
-
-                          <div className="font-semibold text-gray-800">
-                            {exam.title}
-                          </div>
-
-                          <div className="mt-3 text-sm text-green-700 font-medium">
-                            ✅ Akses terbuka untuk Member
-                          </div>
-                        </Link>
-                      )
-                    })}
+                    {searchResults.map(exam => (
+                      <Link
+                        key={exam.id}
+                        to={`/exam/${exam.id}`}
+                        className="p-5 rounded-2xl border bg-white hover:shadow-lg"
+                      >
+                        <div className="font-semibold text-gray-800">
+                          {exam.title}
+                        </div>
+                        <div className="text-xs text-blue-600 mt-2">
+                          Kerjakan Sekarang →
+                        </div>
+                      </Link>
+                    ))}
                   </div>
                 )}
 
@@ -915,6 +865,9 @@ export default function CategoryLandingPage() {
               </h4>
               <ul className="space-y-3 text-sm select-none">
                 {latestExams.map((e, index) => {
+                  const isMemberOnly = e.is_member_only
+                  const isLocked = isMemberOnly && !isMemberActive
+
                   const gradients = [
                     'from-purple-500 to-fuchsia-500',
                     'from-blue-500 to-cyan-500',
@@ -963,47 +916,22 @@ export default function CategoryLandingPage() {
                         `}
                       />
 
-                      {/* ANGKA BULAT */}
-                      <div
-                        className={`
-                          w-8 h-8 shrink-0 rounded-full
-                          flex items-center justify-center
-                          text-xs font-bold
-                          transition-colors duration-300
-                          ${isActive
-                            ? 'bg-white text-indigo-600'
-                            : 'bg-slate-100 text-slate-500'}
-                        `}
-                      >
+                      {/* Nomor urut */}
+                      <div className="w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-xs font-bold bg-slate-100 text-slate-500">
                         {index + 1}
                       </div>
 
-                      {/* JUDUL */}
+                      {/* Judul + Badge */}
                       <div className="flex flex-col">
                         <Link
-                          to={
-                            e.is_member_only && !isMemberActive
-                              ? '/upgrade'
-                              : `/exam/${e.id}`
-                          }
-                          className={`
-                            leading-snug font-semibold
-                            transition-colors duration-300
-                            ${isActive ? 'text-white' : 'text-slate-700'}
-                          `}
+                          to={isLocked ? '/upgrade' : `/exam/${e.id}`}
+                          className="leading-snug font-semibold"
                         >
                           {e.title}
                         </Link>
 
-                        {e.is_member_only && (
-                          <span
-                            className={`
-                              mt-1 inline-block text-[10px] px-2 py-0.5 rounded-full font-medium
-                              ${isActive
-                                ? 'bg-white/20 text-white'
-                                : 'bg-purple-100 text-purple-700'}
-                            `}
-                          >
+                        {isMemberOnly && (
+                          <span className="mt-1 inline-block text-[10px] px-2 py-0.5 rounded-full font-medium bg-purple-600 text-white font-semibold">
                             🔒 Khusus Member
                           </span>
                         )}
