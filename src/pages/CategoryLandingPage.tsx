@@ -9,7 +9,19 @@ import {
   Instagram,
   Youtube,
   Music,
-  LucideIcon
+  LucideIcon,
+  ClipboardList,
+  Calculator,
+  BookOpen,
+  Atom,
+  Globe2,
+  Landmark,
+  Languages,
+  BookText,
+  Scale,
+  Dna,
+  Zap,
+  FlaskConical
 } from 'lucide-react'
 import RequestSoalWA from '../components/RequestSoalWA'
 
@@ -132,6 +144,9 @@ export default function CategoryLandingPage() {
   const [searchResults, setSearchResults] = useState<ExamSet[]>([])
   const searchResultRef = useRef<HTMLDivElement | null>(null)
   const [activeLatestId, setActiveLatestId] = useState<string | null>(null)
+
+  // ===== ACCORDION STATE (SAMA SEPERTI HOME) =====
+  const [openClassId, setOpenClassId] = useState<string | null>(null)
 
   // BLOK PENCARIAN
   function splitKeywords(q: string) {
@@ -348,6 +363,93 @@ export default function CategoryLandingPage() {
     category.description ||
     `Latihan dan kumpulan soal ${category.name} lengkap dengan pembahasan. Cocok untuk persiapan ujian.`
 
+  // ===== ICON & THEME (SAMA DENGAN HOME) =====
+  const categoryKey = category.name.toLowerCase()
+
+  let Icon = BookOpen
+
+  if (categoryKey.includes('matematika')) Icon = Calculator
+  else if (categoryKey.includes('ipa')) Icon = Atom
+  else if (categoryKey.includes('ips')) Icon = Globe2
+  else if (categoryKey.includes('bahasa inggris')) Icon = Languages
+  else if (categoryKey.includes('bahasa indonesia')) Icon = BookText
+  else if (categoryKey.includes('pancasila')) Icon = Scale
+  else if (categoryKey.includes('biologi')) Icon = Dna
+  else if (categoryKey.includes('fisika')) Icon = Zap
+  else if (categoryKey.includes('kimia')) Icon = FlaskConical
+  else if (categoryKey.includes('sejarah')) Icon = Landmark
+
+  let theme = {
+    header: 'from-sky-500 to-blue-600',
+    accent: 'border-sky-500',
+    soft: 'bg-sky-50',
+    iconBg: 'bg-sky-100',
+    iconText: 'text-sky-600'
+  }
+
+  if (categoryKey.includes('biologi')) {
+    theme = {
+      header: 'from-emerald-500 to-green-600',
+      accent: 'border-emerald-500',
+      soft: 'bg-emerald-50',
+      iconBg: 'bg-emerald-100',
+      iconText: 'text-emerald-600'
+    }
+  }
+  else if (categoryKey.includes('fisika')) {
+    theme = {
+      header: 'from-blue-500 to-indigo-600',
+      accent: 'border-blue-500',
+      soft: 'bg-blue-50',
+      iconBg: 'bg-blue-100',
+      iconText: 'text-blue-600'
+    }
+  }
+  else if (categoryKey.includes('kimia')) {
+    theme = {
+      header: 'from-purple-500 to-violet-600',
+      accent: 'border-purple-500',
+      soft: 'bg-purple-50',
+      iconBg: 'bg-purple-100',
+      iconText: 'text-purple-600'
+    }
+  }
+  else if (categoryKey.includes('matematika')) {
+    theme = {
+      header: 'from-cyan-500 to-blue-600',
+      accent: 'border-cyan-500',
+      soft: 'bg-cyan-50',
+      iconBg: 'bg-cyan-100',
+      iconText: 'text-cyan-600'
+    }
+  }
+  else if (categoryKey.includes('bahasa indonesia')) {
+    theme = {
+      header: 'from-orange-500 to-amber-600',
+      accent: 'border-orange-500',
+      soft: 'bg-orange-50',
+      iconBg: 'bg-orange-100',
+      iconText: 'text-orange-600'
+    }
+  }
+  else if (categoryKey.includes('bahasa inggris')) {
+    theme = {
+      header: 'from-indigo-500 to-blue-700',
+      accent: 'border-indigo-500',
+      soft: 'bg-indigo-50',
+      iconBg: 'bg-indigo-100',
+      iconText: 'text-indigo-600'
+    }
+  }
+  else if (categoryKey.includes('pancasila')) {
+    theme = {
+      header: 'from-rose-500 to-red-600',
+      accent: 'border-rose-500',
+      soft: 'bg-rose-50',
+      iconBg: 'bg-rose-100',
+      iconText: 'text-rose-600'
+    }
+  }
 
   return (
     <>
@@ -727,7 +829,20 @@ export default function CategoryLandingPage() {
             ) : (
               <>
                 {/* ===== KONTEN NORMAL CATEGORY ===== */}
-                <h1 className="text-3xl font-bold mb-2">{category.name}</h1>
+                <h2
+                  className={`
+                    flex items-center gap-3
+                    text-lg md:text-xl font-bold
+                    pl-5 py-3 rounded-xl mb-6
+                    bg-gradient-to-r ${theme.header}
+                    text-white shadow-md
+                  `}
+                >
+                  <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  {category.name}
+                </h2>
 
                 {category.description && (
                   <p className="text-gray-600 max-w-2xl mb-8">
@@ -739,105 +854,146 @@ export default function CategoryLandingPage() {
                   const exams = examSets.filter(e => e.sub_category_id === sub.id)
                   if (!exams.length) return null
 
-                  return (
-                    <section key={sub.id} id={slugify(sub.name)}>
-                      <h2 className="text-lg font-semibold text-blue-600 mb-3">
-                        {sub.name}
-                      </h2>
-                      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {exams.map(exam => {
-                          const isMemberOnly = exam.is_member_only
-                          const isLocked = isMemberOnly && !isMemberActive
+                  const isOpen = openClassId === sub.id
 
-                          // Exam publik → selalu bisa diakses
-                          if (!isMemberOnly) {
+                  return (
+                    <div key={sub.id} className="mb-5">
+
+                      {/* ===== ACCORDION HEADER ===== */}
+                      <button
+                        onClick={() =>
+                          setOpenClassId(isOpen ? null : sub.id)
+                        }
+                        className={`
+                          w-full flex justify-between items-center
+                          px-5 py-2 rounded-2xl
+                          border transition-all duration-300
+                          ${isOpen
+                            ? `bg-gradient-to-r ${theme.header} text-white shadow-xl scale-[1.01]`
+                            : `bg-white border-l-4 ${theme.accent} hover:shadow-md text-gray-800`}
+                        `}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`
+                            w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold
+                            ${isOpen ? 'bg-white/20' : `${theme.iconBg} ${theme.iconText}`}
+                          `}>
+                            <Icon className="w-4 h-4" />
+                          </div>
+                          <span className="font-semibold text-left">
+                            {sub.name}
+                          </span>
+                        </div>
+
+                        <span className="text-sm font-medium">
+                          {isOpen ? '▲ Tutup' : '▼ Lihat Soal'}
+                        </span>
+                      </button>
+
+                      {/* ===== ACCORDION CONTENT ===== */}
+                      <div
+                        className={`
+                          overflow-hidden transition-all duration-500 ease-in-out
+                          ${isOpen ? `${theme.soft} rounded-2xl p-4` : ''}
+                          ${isOpen ? 'max-h-[2000px] opacity-100 mt-4' : 'max-h-0 opacity-0'}
+                        `}
+                      >
+                        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {exams.map(exam => {
+
+                            const isMemberOnly = exam.is_member_only
+                            const canAccessExam =
+                              !isMemberOnly ||
+                              (profile && profile.membership_status === 'active')
+
+                            // PUBLIC
+                            if (!isMemberOnly) {
+                              return (
+                                <Link
+                                  key={exam.id}
+                                  to={`/exam/${exam.id}`}
+                                  className={`
+                                    relative p-5 rounded-2xl
+                                    border border-gray-100
+                                    border-l-4 ${theme.accent}
+                                    bg-white
+                                    transition-all duration-300
+                                    hover:shadow-xl hover:-translate-y-1
+                                  `}
+                                >
+                                  <div className={`
+                                    w-9 h-9 rounded-xl flex items-center justify-center mb-3
+                                    ${theme.iconBg} ${theme.iconText}
+                                  `}>
+                                    <ClipboardList className="w-5 h-5" />
+                                  </div>
+
+                                  <div className="font-semibold text-gray-800 leading-snug">
+                                    {exam.title}
+                                  </div>
+
+                                  <div className="mt-2 text-xs text-blue-600">
+                                    Kerjakan Sekarang →
+                                  </div>
+                                </Link>
+                              )
+                            }
+
+                            // LOCKED MEMBER
+                            if (!canAccessExam) {
+                              return (
+                                <Link
+                                  key={exam.id}
+                                  to="/upgrade"
+                                  className="relative p-5 rounded-2xl border bg-gradient-to-br from-purple-50 to-white border-purple-300 hover:shadow-lg"
+                                >
+                                  <div className="absolute top-3 right-3 bg-purple-600 text-white text-[10px] font-semibold px-2 py-1 rounded-full tracking-wide">
+                                    KHUSUS MEMBER
+                                  </div>
+
+                                  <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 bg-purple-100 text-purple-600">
+                                    <ClipboardList className="w-5 h-5" />
+                                  </div>
+
+                                  <div className="font-semibold text-gray-800 leading-snug">
+                                    {exam.title}
+                                  </div>
+
+                                  <div className="mt-4 text-sm text-purple-700 font-medium">
+                                    🔒 Login / Upgrade untuk akses penuh →
+                                  </div>
+                                </Link>
+                              )
+                            }
+
+                            // MEMBER ACTIVE
                             return (
                               <Link
                                 key={exam.id}
                                 to={`/exam/${exam.id}`}
-                                className="
-                                  relative p-5 rounded-2xl border
-                                  transition hover:shadow-lg hover:-translate-y-1
-                                  bg-white
-                                "
-                              >
-                                <div className="w-8 h-8 rounded-full flex items-center justify-center mb-3 bg-blue-100 text-blue-600">
-                                  ✏️
-                                </div>
-                                <div className="font-semibold text-gray-800 leading-snug">
-                                  {exam.title}
-                                </div>
-                                <div className="mt-2 text-xs text-blue-600">
-                                  Kerjakan Sekarang →
-                                </div>
-                              </Link>
-                            )
-                          }
-
-                          // Exam member-only tapi user belum aktif → teaser yang bisa diklik ke /upgrade
-                          if (isLocked) {
-                            return (
-                              <Link
-                                key={exam.id}
-                                to="/upgrade"
-                                className="
-                                  relative p-5 rounded-2xl border
-                                  transition hover:shadow-lg hover:-translate-y-1
-                                  bg-gradient-to-br from-purple-50 to-white border-purple-300
-                                "
+                                className="relative p-5 rounded-2xl border bg-gradient-to-br from-purple-50 to-white border-purple-300 hover:shadow-lg"
                               >
                                 <div className="absolute top-3 right-3 bg-purple-600 text-white text-[10px] font-semibold px-2 py-1 rounded-full tracking-wide">
                                   KHUSUS MEMBER
                                 </div>
-                                <div className="w-8 h-8 rounded-full flex items-center justify-center mb-3 bg-purple-100 text-purple-600">
-                                  ✏️
+
+                                <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 bg-purple-100 text-purple-600">
+                                  <ClipboardList className="w-5 h-5" />
                                 </div>
+
                                 <div className="font-semibold text-gray-800 leading-snug">
                                   {exam.title}
                                 </div>
-                                <div className="mt-2 text-sm text-gray-600">
-                                  Latihan eksklusif dengan pembahasan lengkap
+
+                                <div className="mt-4 text-sm text-green-700 font-medium">
+                                  ✅ Akses terbuka untuk Member
                                 </div>
-                                <div className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-purple-700">
-                                  🔒 Login / Upgrade untuk akses penuh →
-                                </div>
-                                <div className="absolute inset-0 rounded-2xl bg-purple-500/5 pointer-events-none" />
                               </Link>
                             )
-                          }
-
-                          // Exam member-only → member aktif dapat Link penuh
-                          return (
-                            <Link
-                              key={exam.id}
-                              to={`/exam/${exam.id}`}
-                              className="
-                                relative p-5 rounded-2xl border
-                                transition hover:shadow-lg hover:-translate-y-1
-                                bg-gradient-to-br from-purple-50 to-white border-purple-300
-                              "
-                            >
-                              <div className="absolute top-3 right-3 bg-purple-600 text-white text-[10px] font-semibold px-2 py-1 rounded-full tracking-wide">
-                                KHUSUS MEMBER
-                              </div>
-                              <div className="w-8 h-8 rounded-full flex items-center justify-center mb-3 bg-purple-100 text-purple-600">
-                                ✏️
-                              </div>
-                              <div className="font-semibold text-gray-800 leading-snug">
-                                {exam.title}
-                              </div>
-                              <div className="mt-2 text-sm text-gray-600">
-                                Latihan eksklusif dengan pembahasan lengkap
-                              </div>
-                              <div className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-green-700">
-                                ✅ Akses terbuka untuk Member
-                              </div>
-                            </Link>
-                          )
-                        })}
+                          })}
+                        </div>
                       </div>
-
-                    </section>
+                    </div>
                   )
                 })}
                 <RequestSoalWA />

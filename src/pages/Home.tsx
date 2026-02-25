@@ -5,13 +5,24 @@ import { useAuth } from '../hooks/useAuth'
 import logo from '../asset/leaf.png'
 import RequestSoalWA from "../components/RequestSoalWA";
 import { Helmet } from 'react-helmet-async'
-
 import {
   Facebook,
   Instagram,
   Youtube,
   Music,
-  LucideIcon
+  LucideIcon,
+  ClipboardList,
+  Calculator,
+  BookOpen,
+  Atom,
+  Globe2,
+  Landmark,
+  Languages,
+  BookText,
+  Scale,
+  Dna,
+  Zap,
+  FlaskConical
 } from 'lucide-react'
 
 
@@ -83,7 +94,6 @@ const SOCIAL_ICONS: Record<string, LucideIcon> = {
   tiktok: Music,
 }
 
-
 /* ================= HELPERS ================= */
 
 function buildMenuTree(menus: Menu[]) {
@@ -133,7 +143,9 @@ export default function Home() {
 
   const searchResultRef = useRef<HTMLDivElement | null>(null)
   const [activeLatestId, setActiveLatestId] = useState<string | null>(null)
-
+  
+  // ===== ACCORDION STATE (BARU) =====
+  const [openClassId, setOpenClassId] = useState<string | null>(null)
 
   /* ===== SEARCH HANDLER ===== */
   function handleSearch() {
@@ -908,6 +920,100 @@ export default function Home() {
               <>
                 {/* ===== KONTEN NORMAL (Hero & Category tetap tampil) ===== */}
                 {categories.map(cat => {
+                  const categoryKey = cat.name.toLowerCase()
+
+                    let Icon = BookOpen
+
+                    if (categoryKey.includes('matematika')) Icon = Calculator
+                    else if (categoryKey.includes('ipa')) Icon = Atom
+                    else if (categoryKey.includes('ips')) Icon = Globe2
+                    else if (categoryKey.includes('bahasa inggris')) Icon = Languages
+                    else if (categoryKey.includes('bahasa indonesia')) Icon = BookText
+                    else if (categoryKey.includes('pancasila')) Icon = Scale
+                    else if (categoryKey.includes('biologi')) Icon = Dna
+                    else if (categoryKey.includes('fisika')) Icon = Zap
+                    else if (categoryKey.includes('kimia')) Icon = FlaskConical
+                    else if (categoryKey.includes('sejarah')) Icon = Landmark
+
+                  let theme = {
+                    header: 'from-sky-500 to-blue-600',
+                    accent: 'border-sky-500',
+                    soft: 'bg-sky-50',
+                    iconBg: 'bg-sky-100',
+                    iconText: 'text-sky-600'
+                  }
+
+                  if (categoryKey.includes('biologi')) {
+                    Icon = Dna
+                    theme = {
+                      header: 'from-emerald-500 to-green-600',
+                      accent: 'border-emerald-500',
+                      soft: 'bg-emerald-50',
+                      iconBg: 'bg-emerald-100',
+                      iconText: 'text-emerald-600'
+                    }
+                  }
+                  else if (categoryKey.includes('fisika')) {
+                    Icon = Zap
+                    theme = {
+                      header: 'from-blue-500 to-indigo-600',
+                      accent: 'border-blue-500',
+                      soft: 'bg-blue-50',
+                      iconBg: 'bg-blue-100',
+                      iconText: 'text-blue-600'
+                    }
+                  }
+                  else if (categoryKey.includes('kimia')) {
+                    Icon = FlaskConical
+                    theme = {
+                      header: 'from-purple-500 to-violet-600',
+                      accent: 'border-purple-500',
+                      soft: 'bg-purple-50',
+                      iconBg: 'bg-purple-100',
+                      iconText: 'text-purple-600'
+                    }
+                  }
+                  else if (categoryKey.includes('matematika')) {
+                    Icon = Calculator
+                    theme = {
+                      header: 'from-cyan-500 to-blue-600',
+                      accent: 'border-cyan-500',
+                      soft: 'bg-cyan-50',
+                      iconBg: 'bg-cyan-100',
+                      iconText: 'text-cyan-600'
+                    }
+                  }
+                  else if (categoryKey.includes('bahasa indonesia')) {
+                    Icon = BookText
+                    theme = {
+                      header: 'from-orange-500 to-amber-600',
+                      accent: 'border-orange-500',
+                      soft: 'bg-orange-50',
+                      iconBg: 'bg-orange-100',
+                      iconText: 'text-orange-600'
+                    }
+                  }
+                  else if (categoryKey.includes('bahasa inggris')) {
+                    Icon = Languages
+                    theme = {
+                      header: 'from-indigo-500 to-blue-700',
+                      accent: 'border-indigo-500',
+                      soft: 'bg-indigo-50',
+                      iconBg: 'bg-indigo-100',
+                      iconText: 'text-indigo-600'
+                    }
+                  }
+                  else if (categoryKey.includes('pancasila')) {
+                    Icon = Scale
+                    theme = {
+                      header: 'from-rose-500 to-red-600',
+                      accent: 'border-rose-500',
+                      soft: 'bg-rose-50',
+                      iconBg: 'bg-rose-100',
+                      iconText: 'text-rose-600'
+                    }
+                  }
+                    
                   const catSubs = subCategories
                     .filter(s => s.category_id === cat.id)
                     .sort((a, b) => getClassNumber(a.name) - getClassNumber(b.name))
@@ -918,15 +1024,17 @@ export default function Home() {
                   return (
                     <section key={cat.id}>
                       <h2
-                        className="
-                          text-lg md:text-xl font-bold text-gray-800
-                          bg-gradient-to-r from-sky-500/10 to-transparent
-                          border-l-4 border-sky-500
-                          pl-4 py-2
-                          rounded-r-lg
-                          mb-4
-                        "
+                        className={`
+                          flex items-center gap-3
+                          text-lg md:text-xl font-bold
+                          pl-5 py-3 rounded-xl mb-6
+                          bg-gradient-to-r ${theme.header}
+                          text-white shadow-md
+                        `}
                       >
+                        <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                          <Icon className="w-4 h-4" />
+                        </div>
                         {cat.name}
                       </h2>
 
@@ -936,97 +1044,148 @@ export default function Home() {
 
                         if (!exams.length && !teasers.length) return null
 
+                        const isOpen = openClassId === sub.id
+
                         return (
-                          <div key={sub.id} className="mb-6">
-                            <h3 className="font-semibold text-blue-600 mb-3">{sub.name}</h3>
-
-                          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {exams.map(exam => {
-                              const isMemberOnly = exam.is_member_only
-
-                              // 🔥 FIX FINAL DAN JELAS
-                              const canAccessExam =
-                                !isMemberOnly ||
-                                (profile && profile.membership_status === 'active')
-
-                              if (!isMemberOnly) {
-                                return (
-                                  <Link
-                                    key={exam.id}
-                                    to={`/exam/${exam.id}`}
-                                    className="relative p-5 rounded-2xl border transition hover:shadow-lg hover:-translate-y-1 bg-white"
-                                  >
-                                    <div className="w-8 h-8 rounded-full flex items-center justify-center mb-3 bg-blue-100 text-blue-600">
-                                      ✏️
-                                    </div>
-                                    <div className="font-semibold text-gray-800 leading-snug">
-                                      {exam.title}
-                                    </div>
-                                    <div className="mt-2 text-xs text-blue-600">
-                                      Kerjakan Sekarang →
-                                    </div>
-                                  </Link>
-                                )
+                          <div key={sub.id} className="mb-5">
+                            
+                            {/* ===== ACCORDION HEADER ===== */}
+                            <button
+                              onClick={() =>
+                                setOpenClassId(isOpen ? null : sub.id)
                               }
+                              className={`
+                                w-full flex justify-between items-center
+                                px-5 py-2 rounded-2xl
+                                border transition-all duration-300
+                                ${isOpen
+                                  ? `bg-gradient-to-r ${theme.header} text-white shadow-xl scale-[1.01]`
+                                  : `bg-white border-l-4 ${theme.accent} hover:shadow-md text-gray-800`}
+                              `}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className={`
+                                  w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold
+                                  ${isOpen ? 'bg-white/20' : `${theme.iconBg} ${theme.iconText}`}
+                                `}>
+                                  <Icon className="w-4 h-4" />
+                                </div>
+                                <span className="font-semibold text-left">
+                                  {sub.name}
+                                </span>
+                              </div>
 
-                              // Exam member-only tapi user belum aktif → teaser yang bisa diklik ke /upgrade
-                              if (!canAccessExam) {
-                                return (
-                                  <Link
-                                    key={exam.id}
-                                    to="/upgrade"
-                                    className="
-                                      relative p-5 rounded-2xl border
-                                      transition hover:shadow-lg hover:-translate-y-1
-                                      bg-gradient-to-br from-purple-50 to-white border-purple-300
-                                    "
-                                  >
-                                    <div className="absolute top-3 right-3 bg-purple-600 text-white text-[10px] font-semibold px-2 py-1 rounded-full tracking-wide">
-                                      KHUSUS MEMBER
-                                    </div>
-                                    <div className="w-8 h-8 rounded-full flex items-center justify-center mb-3 bg-purple-100 text-purple-600">
-                                      ✏️
-                                    </div>
-                                    <div className="font-semibold text-gray-800 leading-snug">
-                                      {exam.title}
-                                    </div>
-                                    <div className="mt-2 text-sm text-gray-600">
-                                      Latihan eksklusif dengan pembahasan lengkap
-                                    </div>
-                                    <div className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-purple-700">
-                                      🔒 Login / Upgrade untuk akses penuh →
-                                    </div>
-                                    <div className="absolute inset-0 rounded-2xl bg-purple-500/5 pointer-events-none" />
-                                  </Link>
-                                )
-                              }
+                              <span className="text-sm font-medium">
+                                {isOpen ? '▲ Tutup' : '▼ Lihat Soal'}
+                              </span>
+                            </button>
+                            {/* ===== ACCORDION CONTENT ===== */}
+                            <div
+                              className={`
+                                overflow-hidden transition-all duration-500 ease-in-out
+                                ${isOpen ? `${theme.soft} rounded-2xl p-4` : ''}
+                                ${isOpen ? 'max-h-[2000px] opacity-100 mt-4' : 'max-h-0 opacity-0'}
+                              `}
+                            >
+                              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {exams.map(exam => {
+                                  const isMemberOnly = exam.is_member_only
 
-                              // Exam member-only tapi user aktif
-                              return (
-                                <Link
-                                  key={exam.id}
-                                  to={`/exam/${exam.id}`}
-                                  className="relative p-5 rounded-2xl border transition hover:shadow-lg hover:-translate-y-1 bg-gradient-to-br from-purple-50 to-white border-purple-300"
-                                >
-                                  <div className="absolute top-3 right-3 bg-purple-600 text-white text-[10px] font-semibold px-2 py-1 rounded-full tracking-wide">
-                                    KHUSUS MEMBER
-                                  </div>
-                                  <div className="w-8 h-8 rounded-full flex items-center justify-center mb-3 bg-purple-100 text-purple-600">
-                                    ✏️
-                                  </div>
-                                  <div className="font-semibold text-gray-800 leading-snug">
-                                    {exam.title}
-                                  </div>
-                                  <div className="mt-2 text-sm text-gray-600">
-                                    Latihan eksklusif dengan pembahasan lengkap
-                                  </div>
-                                  <div className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-green-700">
-                                    ✅ Akses terbuka untuk Member
-                                  </div>
-                                </Link>
-                              )
-                            })}
-                          </div>
+                                  // 🔥 FIX FINAL DAN JELAS
+                                  const canAccessExam =
+                                    !isMemberOnly ||
+                                    (profile && profile.membership_status === 'active')
+
+                                  if (!isMemberOnly) {
+                                    return (
+                                      <Link
+                                        key={exam.id}
+                                        to={`/exam/${exam.id}`}
+                                        className={`
+                                          relative p-5 rounded-2xl
+                                          border border-gray-100
+                                          border-l-4 ${theme.accent}
+                                          bg-white
+                                          transition-all duration-300
+                                          hover:shadow-xl hover:-translate-y-1
+                                          hover:ring-2 hover:ring-offset-1 hover:ring-${theme.accent.replace('border-', '')}
+                                        `}
+                                      >
+                                        <div className={`
+                                          w-9 h-9 rounded-xl flex items-center justify-center mb-3
+                                          ${theme.iconBg} ${theme.iconText}
+                                        `}>
+                                          <ClipboardList className="w-5 h-5" />
+                                        </div>
+                                        <div className="font-semibold text-gray-800 leading-snug">
+                                          {exam.title}
+                                        </div>
+                                        <div className="mt-2 text-xs text-blue-600">
+                                          Kerjakan Sekarang →
+                                        </div>
+                                      </Link>
+                                    )
+                                  }
+
+                                  // Exam member-only tapi user belum aktif → teaser yang bisa diklik ke /upgrade
+                                  if (!canAccessExam) {
+                                    return (
+                                      <Link
+                                        key={exam.id}
+                                        to="/upgrade"
+                                        className="
+                                          relative p-5 rounded-2xl border
+                                          transition hover:shadow-lg hover:-translate-y-1
+                                          bg-gradient-to-br from-purple-50 to-white border-purple-300
+                                        "
+                                      >
+                                        <div className="absolute top-3 right-3 bg-purple-600 text-white text-[10px] font-semibold px-2 py-1 rounded-full tracking-wide">
+                                          KHUSUS MEMBER
+                                        </div>
+                                        <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 bg-purple-100 text-purple-600">
+                                          <ClipboardList className="w-5 h-5" />
+                                        </div>
+                                        <div className="font-semibold text-gray-800 leading-snug">
+                                          {exam.title}
+                                        </div>
+                                        <div className="mt-2 text-sm text-gray-600">
+                                          Latihan eksklusif beragam soal
+                                        </div>
+                                        <div className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-purple-700">
+                                          🔒 Login / Upgrade untuk akses penuh →
+                                        </div>
+                                        <div className="absolute inset-0 rounded-2xl bg-purple-500/5 pointer-events-none" />
+                                      </Link>
+                                    )
+                                  }
+
+                                  // Exam member-only tapi user aktif
+                                  return (
+                                    <Link
+                                      key={exam.id}
+                                      to={`/exam/${exam.id}`}
+                                      className="relative p-5 rounded-2xl border transition hover:shadow-lg hover:-translate-y-1 bg-gradient-to-br from-purple-50 to-white border-purple-300"
+                                    >
+                                      <div className="absolute top-3 right-3 bg-purple-600 text-white text-[10px] font-semibold px-2 py-1 rounded-full tracking-wide">
+                                        KHUSUS MEMBER
+                                      </div>
+                                      <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 bg-purple-100 text-purple-600">
+                                        <ClipboardList className="w-5 h-5" />
+                                      </div>
+                                      <div className="font-semibold text-gray-800 leading-snug">
+                                        {exam.title}
+                                      </div>
+                                      <div className="mt-2 text-sm text-gray-600">
+                                        Latihan eksklusif dengan pembahasan lengkap
+                                      </div>
+                                      <div className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-green-700">
+                                        ✅ Akses terbuka untuk Member
+                                      </div>
+                                    </Link>
+                                  )
+                                })}
+                              </div>
+                            </div>
                           </div>
                         )
                       })}
