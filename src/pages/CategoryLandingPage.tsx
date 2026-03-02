@@ -894,9 +894,11 @@ export default function CategoryLandingPage() {
                       <div
                         className={`
                           overflow-hidden transition-all duration-500 ease-in-out
-                          ${isOpen ? `${theme.soft} rounded-2xl p-4` : ''}
-                          ${isOpen ? 'max-h-[2000px] opacity-100 mt-4' : 'max-h-0 opacity-0'}
+                          ${isOpen ? `${theme.soft} rounded-2xl p-4 mt-4 opacity-100` : 'max-h-0 opacity-0'}
                         `}
+                        style={{
+                          maxHeight: isOpen ? '9999px' : '0px'
+                        }}
                       >
                         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                           {exams.map(exam => {
