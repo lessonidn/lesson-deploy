@@ -467,6 +467,7 @@ export default function ResultPage() {
                   // tandai bahwa login dari komentar
                   sessionStorage.setItem('scrollToComment', 'true')
 
+                  console.log("ENV VITE_APP_URL:", import.meta.env.VITE_APP_URL)
                   await supabase.auth.signInWithOAuth({
                     provider: 'google',
                     options: {
