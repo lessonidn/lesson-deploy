@@ -48,6 +48,8 @@ export default function ResultPage() {
   const [submitting, setSubmitting] = useState(false)
 
   const commentSectionRef = useRef<HTMLDivElement | null>(null)
+  const [avgRating, setAvgRating] = useState<number | null>(null)
+  const [existingFeedbackId, setExistingFeedbackId] = useState<string | null>(null)
 
  /* === CEK LOGIN GMAIL KOMENTAR ==== */
   useEffect(() => {
@@ -73,6 +75,42 @@ export default function ResultPage() {
       subscription.unsubscribe()
     }
   }, [])
+
+  //== load feedback user login ==//
+  useEffect(() => {
+    if (!user || !attempt) return
+
+    const examSetId = attempt.exam_set_id
+
+    const userId = user.id  // 🔥 simpan ke variable lokal
+
+    async function loadUserFeedback() {
+      const { data, error } = await supabase
+    .from('exam_feedback')
+    .select('*')
+    .eq('exam_set_id', examSetId)
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (error) {
+    console.log(error)
+    return
+  }
+
+  if (data) {
+    setExistingFeedbackId(data.id)
+    setRating(data.rating)
+    setComment(data.comment || '')
+  } else {
+    // 🔥 reset jika user belum pernah review
+    setExistingFeedbackId(null)
+    setRating(0)
+    setComment('')
+  }
+  }
+
+    loadUserFeedback()
+  }, [user, attempt])
 
   const loadResult = useCallback(async () => {
     const { data: attemptData } = await supabase
@@ -140,6 +178,29 @@ export default function ResultPage() {
     loadResult()
   }, [loadResult])
 
+  //=== RATA-RATA RATING ===//
+  useEffect(() => {
+    if (!attempt) return
+
+    const examSetId = attempt.exam_set_id  // 🔥 ambil dulu ke variable lokal
+
+    async function loadRating() {
+      const { data } = await supabase
+        .from('exam_feedback')
+        .select('rating')
+        .eq('exam_set_id', examSetId)
+
+      if (!data || data.length === 0) {
+        setAvgRating(null)
+        return
+      }
+
+      const total = data.reduce((sum, r) => sum + r.rating, 0)
+      setAvgRating(Math.round((total / data.length) * 10) / 10)
+    }
+
+    loadRating()
+  }, [attempt])
   
   useEffect(() => {
     const shouldScroll = sessionStorage.getItem('scrollToComment')
@@ -151,10 +212,10 @@ export default function ResultPage() {
       commentSectionRef.current
     ) {
       setTimeout(() => {
-        commentSectionRef.current?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start',
-        })
+        if (commentSectionRef.current) {
+          const top = commentSectionRef.current.offsetTop
+          window.scrollTo({ top, behavior: 'auto' })
+        }
         sessionStorage.removeItem('scrollToComment')
       }, 200)
     }
@@ -294,6 +355,15 @@ export default function ResultPage() {
         </div>
       </div>
 
+      <div className="text-center pt-6">
+          <Link
+            to="/category"
+            className="inline-block rounded-lg bg-indigo-600 px-6 py-3 text-white hover:bg-indigo-700"
+          >
+            Kembali ke Daftar Mata Pelajaran
+          </Link>
+        </div>
+
       {/* REVIEW */}
       <div className="mx-auto max-w-4xl px-4 py-8 space-y-6">
         {questions.map((q, idx) => (
@@ -355,27 +425,7 @@ export default function ResultPage() {
           </div>
         ))}
 
-        {/* ===== DUKUNG KAMI ===== */}
-        <div className="mt-10 rounded-2xl border bg-gradient-to-br from-pink-50 to-white p-6 text-center shadow-sm">
-          <h3 className="text-lg font-semibold text-pink-600">
-            ❤️ Dukung Kami
-          </h3>
-          <p className="mt-2 text-sm text-gray-600">
-            Jika platform ini bermanfaat, dukunganmu membantu kami
-            terus mengembangkan soal dan fitur pembelajaran.
-          </p>
-
-          <a
-            href="https://sociabuzz.com/bimbellesson/tribe"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-4 inline-block rounded-lg bg-pink-600 px-6 py-3 text-white font-medium hover:bg-pink-700 transition"
-          >
-            Dukung Sekarang
-          </a>
-        </div>
-
-        <div className="text-center pt-6">
+        <div className="text-center">
           <Link
             to="/category"
             className="inline-block rounded-lg bg-indigo-600 px-6 py-3 text-white hover:bg-indigo-700"
@@ -383,7 +433,13 @@ export default function ResultPage() {
             Kembali ke Daftar Mata Pelajaran
           </Link>
         </div>
+
         {/* ===== RATING & KOMENTAR LEMBAR SOAL ===== */}
+        {avgRating && (
+          <div className="mt-2 text-sm text-gray-600">
+            ⭐ Rating rata-rata: <b>{avgRating}</b> / 5
+          </div>
+        )}
         <div
           id="comment"
           ref={commentSectionRef}
@@ -414,7 +470,7 @@ export default function ResultPage() {
                   await supabase.auth.signInWithOAuth({
                     provider: 'google',
                     options: {
-                      redirectTo: `${window.location.origin}${window.location.pathname}`,
+                      redirectTo: `${import.meta.env.VITE_APP_URL}${window.location.pathname}${window.location.search}${window.location.hash}`,
                     },
                   })
                 }}
@@ -460,31 +516,111 @@ export default function ResultPage() {
                 />
               </div>
 
-              {/* SUBMIT (BELUM SIMPAN DB) */}
+              {/* SUBMIT (SIMPAN DB) */}
               <button
                 onClick={async () => {
+                  if (!user || !attempt) return
+                  if (rating === 0) return
+
                   setSubmitting(true)
 
-                  console.log({
-                    attemptId,
-                    rating,
-                    comment,
-                    user_id: user.id,
-                    email: user.email,
-                  })
+                  try {
+                    const userName =
+                      user.user_metadata?.full_name ||
+                      user.user_metadata?.name ||
+                      user.email?.split('@')[0] ||
+                      'User'
 
-                  alert('Terima kasih atas masukannya 🙏')
-                  setSubmitting(false)
+                    if (existingFeedbackId) {
+                      // UPDATE
+                      const { error } = await supabase
+                        .from('exam_feedback')
+                        .update({
+                          rating,
+                          comment: comment || null,
+                        })
+                        .eq('id', existingFeedbackId)
+
+                      if (error) throw error
+                    } else {
+                      // INSERT
+                      const { error } = await supabase
+                        .from('exam_feedback')
+                        .insert({
+                          exam_set_id: attempt.exam_set_id,
+                          user_id: user.id,
+                          user_name: userName,
+                          user_email: user.email,
+                          rating,
+                          comment: comment || null,
+                        })
+
+                      if (error) throw error
+                    }
+
+                    // 🔥 reload feedback supaya state sinkron
+                    const { data: refreshed } = await supabase
+                      .from('exam_feedback')
+                      .select('*')
+                      .eq('exam_set_id', attempt.exam_set_id)
+                      .eq('user_id', user.id)
+                      .single()
+
+                    if (refreshed) {
+                      setExistingFeedbackId(refreshed.id)
+                      setRating(refreshed.rating)
+                      setComment(refreshed.comment || '')
+                    }
+
+                    alert(existingFeedbackId
+                      ? 'Review berhasil diperbarui ✨'
+                      : 'Terima kasih atas masukannya 🙏'
+                    )
+
+                  } catch (err: unknown) {
+                    if (err instanceof Error) {
+                      alert(err.message)
+                    } else {
+                      alert('Gagal menyimpan feedback')
+                    }
+                  } finally {
+                    setSubmitting(false)
+                  }
                 }}
                 disabled={rating === 0 || submitting}
                 className="mt-4 rounded-lg bg-indigo-600 px-6 py-3 text-white hover:bg-indigo-700 disabled:opacity-50"
               >
-                {submitting ? 'Mengirim...' : 'Kirim Penilaian'}
+                {submitting
+                  ? 'Menyimpan...'
+                  : existingFeedbackId
+                  ? 'Update Review'
+                  : 'Kirim Penilaian'}
               </button>
             </>
           )}
         </div>
+
+        {/* ===== DUKUNG KAMI ===== */}
+        <div className="mt-10 rounded-2xl border bg-gradient-to-br from-pink-50 to-white p-6 text-center shadow-sm">
+          <h3 className="text-lg font-semibold text-pink-600">
+            ❤️ Dukung Kami
+          </h3>
+          <p className="mt-2 text-sm text-gray-600">
+            Jika platform ini bermanfaat, dukunganmu membantu kami
+            terus mengembangkan soal dan fitur pembelajaran.
+          </p>
+
+          <a
+            href="https://sociabuzz.com/bimbellesson/tribe"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 inline-block rounded-lg bg-pink-600 px-6 py-3 text-white font-medium hover:bg-pink-700 transition"
+          >
+            Dukung Sekarang
+          </a>
+        </div>
       </div>
+      
 
       {/* CONFETTI STYLE */}
       <style>{`

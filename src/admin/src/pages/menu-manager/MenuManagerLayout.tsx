@@ -52,7 +52,7 @@ export default function MenuManagerLayout() {
           </NavLink>
 
           <NavLink
-            to="/admin/menu-manager/widgets"
+            to="/admin/menu-manager/feedback"
             className={({ isActive }) =>
               `${linkClass} ${isActive ? activeClass : ''}`
             }

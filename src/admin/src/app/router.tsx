@@ -19,6 +19,7 @@ import Pages from '../pages/menu-manager/Pages'
 import Widgets from '../pages/menu-manager/Widgets'
 import Banners from '../pages/menu-manager/Banners'
 import SocialMedia from '../pages/menu-manager/SocialMedia'
+import Feedback from '../pages/menu-manager/FeedbackManager'
 
 export const adminRoutes: RouteObject[] = [
   // 🔓 LOGIN (PUBLIC)
@@ -52,6 +53,7 @@ export const adminRoutes: RouteObject[] = [
               { path: 'widgets', element: <Widgets /> },
               { path: 'banners', element: <Banners /> },
               { path: 'social-media', element: <SocialMedia /> },
+              { path: 'feedback', element: <Feedback /> },
             ],
           },
         ],
