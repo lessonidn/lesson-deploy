@@ -109,9 +109,21 @@ export default function Questions() {
   ]
   const [showSymbols, setShowSymbols] = useState(false)
 
-  async function load() {
+  async function load(selectedSetId?: string) {
     const { data: setsData, error: setsError } = await getExamSets()
-    const { data: questionsData, error: questionsError } = await getQuestions()
+
+    let questionsData = []
+    let questionsError = null
+
+    if (selectedSetId) {
+      const res = await getQuestions(selectedSetId) // ⬅️ kirim setId
+      questionsData = res.data
+      questionsError = res.error
+    } else {
+      const res = await getQuestions() // fallback (opsional)
+      questionsData = res.data
+      questionsError = res.error
+    }
 
     if (setsError || questionsError) {
       setError(setsError?.message || questionsError?.message || 'Gagal memuat data')
@@ -183,8 +195,8 @@ export default function Questions() {
   }
 
   useEffect(() => {
-    load()
-  }, [])
+    load(setId)
+  }, [setId])
 
   const filteredItems = items
     .filter(q => (setId ? q.exam_set_id === setId : true))
@@ -227,6 +239,9 @@ export default function Questions() {
           onChange={e => {
             const newSetId = e.target.value
             setSetId(newSetId)
+
+            load(newSetId) // ⬅️ TAMBAH INI
+
             if (!editId) {
               setText('')
               editor?.commands.setContent(`<p></p><p></p><p><br></p><p><br></p>`)

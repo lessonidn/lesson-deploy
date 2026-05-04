@@ -313,14 +313,47 @@ export async function getAdminExamSets() {
 /* =========================
    4. Questions
    ========================= */
-export async function getQuestions(examSetId?: string) {
-  let query = supabase
-    .from('questions_with_exam')
-    .select('id, text, exam_set_id, exam_title, created_at')
-    .order('created_at', { ascending: false })
 
-  if (examSetId) query = query.eq('exam_set_id', examSetId)
-  return query
+type Question = {
+  id: string
+  text: string
+  exam_set_id: string
+  exam_title: string
+  created_at: string
+}
+
+export async function getQuestions(examSetId?: string) {
+  const pageSize = 1000
+  let from = 0
+  let to = pageSize - 1
+  const allData: Question[] = []
+  let hasMore = true
+
+  while (hasMore) {
+    let query = supabase
+      .from('questions_with_exam')
+      .select('id, text, exam_set_id, exam_title, created_at')
+      .order('created_at', { ascending: false })
+      .range(from, to)
+
+    if (examSetId) {
+      query = query.eq('exam_set_id', examSetId)
+    }
+
+    const { data, error } = await query
+    if (error) return { data: [], error }
+
+    allData.push(...(data || []))
+
+    if (!data || data.length < pageSize) {
+      hasMore = false
+    } else {
+      from += pageSize
+      to += pageSize
+    }
+  }
+
+  return { data: allData, error: null }
 }
 
 type QuestionRow = { id: string }
