@@ -1,0 +1,102 @@
+/* KantorVirtual.css — gaya halaman Kantor Virtual, semua selector dibatasi
+   di dalam .kantor-virtual supaya tidak bocor ke halaman lain di BimbelLesson. */
+
+.kantor-virtual {
+  --kv-bg: #0f1420;
+  --kv-card: #1a2233;
+  --kv-line: #2a3550;
+  --kv-txt: #e8ecf4;
+  --kv-muted: #8b96ad;
+  --kv-green: #34d399;
+  --kv-amber: #fbbf24;
+  --kv-blue: #60a5fa;
+  --kv-gray: #64748b;
+  background: var(--kv-bg);
+  color: var(--kv-txt);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  padding: 18px;
+  border-radius: 14px;
+}
+.kantor-virtual * { box-sizing: border-box; }
+.kantor-virtual h1 { font-size: 22px; margin: 0 0 4px; }
+.kantor-virtual h2 {
+  font-size: 15px; color: var(--kv-muted); text-transform: uppercase;
+  letter-spacing: 1px; margin: 22px 0 10px;
+}
+.kantor-virtual .kv-sub { color: var(--kv-muted); font-size: 13px; margin-bottom: 16px; }
+.kantor-virtual .kv-nomargin { margin: 0; }
+.kantor-virtual .kv-live { font-size: 12px; color: var(--kv-green); }
+
+.kantor-virtual .kv-progress {
+  height: 8px; background: var(--kv-line); border-radius: 99px;
+  overflow: hidden; margin: 10px 0 18px;
+}
+.kantor-virtual .kv-progress > div {
+  height: 100%; background: linear-gradient(90deg, var(--kv-green), var(--kv-blue));
+  width: 0; transition: width 0.6s;
+}
+
+.kantor-virtual .kv-scene {
+  position: relative; height: 540px; border: 1px solid var(--kv-line);
+  border-radius: 14px; overflow: hidden; background: #0b0f1a;
+}
+.kantor-virtual .kv-scene canvas { display: block; }
+.kantor-virtual .kv-petunjuk {
+  position: absolute; right: 10px; bottom: 10px; font-size: 11.5px; color: var(--kv-muted);
+  background: rgba(10, 14, 24, 0.72); padding: 4px 10px; border-radius: 99px; pointer-events: none;
+}
+.kantor-virtual .kv-gagal3d {
+  display: none; padding: 40px 20px; text-align: center;
+  color: var(--kv-muted); font-size: 14px;
+}
+
+.kantor-virtual .kv-legenda {
+  display: flex; gap: 16px; flex-wrap: wrap;
+  font-size: 12px; color: var(--kv-muted); margin-top: 8px;
+}
+.kantor-virtual .kv-legenda span::before { content: "●"; margin-right: 5px; }
+.kantor-virtual .lg-kerja::before { color: var(--kv-green); }
+.kantor-virtual .lg-review::before { color: var(--kv-amber); }
+.kantor-virtual .lg-selesai::before { color: var(--kv-blue); }
+.kantor-virtual .lg-nganggur::before { color: var(--kv-gray); }
+
+.kantor-virtual .kv-papan {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;
+}
+.kantor-virtual .kv-kolom {
+  background: var(--kv-card); border: 1px solid var(--kv-line);
+  border-radius: 12px; padding: 10px; min-height: 90px;
+}
+.kantor-virtual .kv-kolom h3 { font-size: 13px; margin: 0 0 8px; color: var(--kv-muted); }
+.kantor-virtual .kv-kartu {
+  background: #0f1420; border: 1px solid var(--kv-line); border-radius: 8px;
+  padding: 8px 10px; margin-bottom: 8px; font-size: 13px;
+}
+.kantor-virtual .kv-kartu .t { font-weight: 600; }
+.kantor-virtual .kv-kartu .d { font-size: 11px; color: var(--kv-muted); margin-top: 4px; }
+.kantor-virtual .kv-chip {
+  display: inline-block; font-size: 11px; background: #2a3550;
+  border-radius: 99px; padding: 1px 8px; margin-top: 6px;
+}
+
+.kantor-virtual .kv-log {
+  background: #0a0e18; border: 1px solid var(--kv-line); border-radius: 12px;
+  padding: 12px; font-family: ui-monospace, monospace; font-size: 12px;
+  line-height: 1.7; max-height: 280px; overflow-y: auto;
+}
+.kantor-virtual .kv-log div { border-bottom: 1px dashed #1c2438; padding: 2px 0; }
+
+.kantor-virtual .kv-form { display: grid; gap: 8px; }
+.kantor-virtual .kv-input {
+  width: 100%; padding: 8px 10px; border-radius: 8px;
+  border: 1px solid var(--kv-line); background: #0f1420;
+  color: var(--kv-txt); font-family: inherit;
+}
+.kantor-virtual .kv-btn {
+  padding: 9px; border-radius: 8px; border: 0;
+  background: linear-gradient(90deg, #34d399, #60a5fa);
+  color: #0b0f1a; font-weight: 700; cursor: pointer;
+}
+.kantor-virtual .kv-btn-upload {
+  background: linear-gradient(90deg, #fbbf24, #f472b6);
+}

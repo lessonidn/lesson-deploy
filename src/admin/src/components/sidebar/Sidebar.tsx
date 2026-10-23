@@ -14,6 +14,7 @@ const menus = [
 
   { to: '/admin/invite-member', label: 'Invite Member' },
   { to: '/admin/member', label: 'Daftar Member' },
+  { to: '/admin/kantor-virtual', label: 'Kantor Lesson' },
 ]
 
 type SidebarProps = {
