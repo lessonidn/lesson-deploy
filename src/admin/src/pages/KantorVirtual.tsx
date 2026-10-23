@@ -18,6 +18,10 @@ import "./KantorVirtual.css";
 
 const SB_URL = "https://lczaqdhmgkeauazzxwxa.supabase.co";
 const STATE_URL = SB_URL + "/storage/v1/object/public/office-state/state.json";
+const HASIL_JSON_URL = SB_URL + "/storage/v1/object/public/office-state/hasil.json";
+const HASIL_MD_URL = SB_URL + "/storage/v1/object/public/office-state/hasil-terbaru.md";
+
+type HasilInfo = { proyek: string; folder: string; file: string; selesai: string };
 
 /* ================= Tipe data state.json ================= */
 type Tugas = {
@@ -82,6 +86,11 @@ export default function KantorVirtual() {
   const [catatan, setCatatan] = useState("");
   const [statusUpload, setStatusUpload] = useState("");
 
+  // Hasil terakhir (laporan akhir proyek terakhir, di-push VM ke bucket)
+  const [hasil, setHasil] = useState<HasilInfo | null>(null);
+  const [previewHasil, setPreviewHasil] = useState(false);
+  const [teksHasil, setTeksHasil] = useState("");
+
   const sceneRef = useRef<HTMLDivElement>(null);
   const gagalRef = useRef<HTMLDivElement>(null);
   const logRef = useRef<HTMLDivElement>(null);
@@ -118,6 +127,39 @@ export default function KantorVirtual() {
     const el = logRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [data]);
+
+  /* ================= Hasil terakhir: cek manifest tiap 15 detik ================= */
+  useEffect(() => {
+    let hidup = true;
+    const muatHasil = async () => {
+      try {
+        const r = await fetch(HASIL_JSON_URL + "?ts=" + Date.now());
+        if (!r.ok) return;
+        const h = (await r.json()) as HasilInfo;
+        if (hidup && h && h.file) setHasil(h);
+      } catch {
+        /* belum ada hasil — tombol tetap nonaktif */
+      }
+    };
+    muatHasil();
+    const iv = setInterval(muatHasil, 15000);
+    return () => {
+      hidup = false;
+      clearInterval(iv);
+    };
+  }, []);
+
+  const bukaPreviewHasil = async () => {
+    setTeksHasil("Memuat laporan…");
+    setPreviewHasil(true);
+    try {
+      const r = await fetch(HASIL_MD_URL + "?ts=" + Date.now());
+      if (!r.ok) throw new Error("gagal memuat");
+      setTeksHasil(await r.text());
+    } catch {
+      setTeksHasil("❌ Laporan tidak bisa dimuat. Coba lagi sebentar lagi.");
+    }
+  };
 
   /* ================= Kirim perintah ke kantor ================= */
   const kirimPerintah = async () => {
@@ -736,6 +778,26 @@ export default function KantorVirtual() {
         </div>
       </div>
 
+      <h2>📄 Hasil Terakhir</h2>
+      <div className="kv-kolom">
+        <div className="kv-form">
+          <div className="kv-sub kv-nomargin">
+            {hasil
+              ? <>Laporan akhir proyek: <b>{hasil.proyek || "-"}</b></>
+              : "Belum ada proyek yang selesai — hasil akan muncul di sini setelah kantor menyelesaikan proyek pertamamu."}
+          </div>
+          <div className="kv-hasil-aksi">
+            <button className="kv-btn" onClick={bukaPreviewHasil} disabled={!hasil}>👁️ Preview</button>
+            <a
+              className={"kv-btn kv-btn-unduh" + (hasil ? "" : " kv-btn-mati")}
+              href={hasil ? HASIL_MD_URL : undefined}
+              download="LAPORAN_AKHIR.md"
+              onClick={(e) => { if (!hasil) e.preventDefault(); }}
+            >⬇️ Download</a>
+          </div>
+        </div>
+      </div>
+
       <div className="kv-progress"><div style={{ width: persen + "%" }} /></div>
 
       <h2>🗺️ Kantor 3D</h2>
@@ -777,6 +839,19 @@ export default function KantorVirtual() {
           <div key={i}>{x}</div>
         ))}
       </div>
+
+      {previewHasil && (
+        <div className="kv-overlay" onClick={() => setPreviewHasil(false)}>
+          <div className="kv-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="kv-modal-head">
+              <b>📄 {hasil?.proyek || "Hasil terakhir"}</b>
+              <button className="kv-btn kv-btn-tutup" onClick={() => setPreviewHasil(false)}>✖ Tutup</button>
+            </div>
+            <pre className="kv-modal-isi">{teksHasil}</pre>
+            <a className="kv-btn kv-btn-unduh" href={HASIL_MD_URL} download="LAPORAN_AKHIR.md">⬇️ Download laporan (.md)</a>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -100,3 +100,36 @@
 .kantor-virtual .kv-btn-upload {
   background: linear-gradient(90deg, #fbbf24, #f472b6);
 }
+
+/* ===== Hasil Terakhir (preview + download) ===== */
+.kantor-virtual .kv-hasil-aksi {
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.kantor-virtual .kv-hasil-aksi .kv-btn { flex: 1; text-align: center; }
+.kantor-virtual .kv-btn-unduh {
+  display: inline-block; text-decoration: none; text-align: center;
+  background: linear-gradient(90deg, #a78bfa, #60a5fa);
+}
+.kantor-virtual .kv-btn-mati { opacity: .45; pointer-events: none; }
+.kantor-virtual .kv-btn:disabled { opacity: .45; cursor: not-allowed; }
+.kantor-virtual .kv-overlay {
+  position: fixed; inset: 0; z-index: 60;
+  background: rgba(2, 6, 17, .72);
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+}
+.kantor-virtual .kv-modal {
+  background: #0f172a; border: 1px solid #1e293b; border-radius: 12px;
+  max-width: 860px; width: 100%; max-height: 86vh;
+  display: flex; flex-direction: column; gap: 10px; padding: 14px;
+}
+.kantor-virtual .kv-modal-head {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+}
+.kantor-virtual .kv-btn-tutup {
+  background: #1e293b; color: #e2e8f0; padding: 6px 12px; flex: none;
+}
+.kantor-virtual .kv-modal-isi {
+  overflow: auto; white-space: pre-wrap; word-break: break-word;
+  background: #020617; border: 1px solid #1e293b; border-radius: 8px;
+  padding: 12px; font-size: 13px; line-height: 1.55; margin: 0;
+}
